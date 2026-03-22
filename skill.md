@@ -1,20 +1,70 @@
 ---
 name: metabase
-description: Query data from Metabase databases. Use when the user needs to query business databases, run SQL, view saved reports, or explore database structure via Metabase.
+description: Query data from Metabase databases. Use when the user needs to query business databases, run SQL, view saved reports, or explore database structure via Metabase. Make sure to use this skill whenever the user mentions Metabase, business data queries, saved questions/cards, database schema exploration, or wants to run SQL against a BI platform, even if they don't explicitly say "metabase".
 ---
 
 # Metabase CLI (`mb`)
 
-Query Metabase databases from the terminal. Designed for AI agent use.
+Query Metabase databases from the terminal. Designed for AI agent use — JSON output by default, pagination info to stderr, structured errors.
+
+## Installation
+
+### Global Install (Recommended)
+
+```bash
+npm install -g metabase-cli
+```
+
+After installation, the `mb` command is available globally:
+
+```bash
+mb --version
+mb --help
+```
+
+### One-off Execution via npx
+
+No installation needed — run directly:
+
+```bash
+npx metabase-cli --help
+npx metabase-cli db list
+npx metabase-cli query "SELECT 1" --db 1
+```
+
+### Uninstall
+
+```bash
+npm uninstall -g metabase-cli
+```
+
+To also remove the config file:
+
+```bash
+# Linux/macOS
+rm -rf ~/.config/mb
+
+# Windows
+rmdir /s /q %USERPROFILE%\.config\mb
+```
 
 ## Prerequisites
 
-Set environment variables before using:
+Configure authentication before use (pick one):
+
+**Option A — Environment variables:**
 - `MB_HOST` — Metabase server URL (e.g., `https://metabase.example.com`)
 - `MB_TOKEN` — API key (starts with `mb_`), OR
-- `MB_USERNAME` + `MB_PASSWORD` — for session-based auth with auto-renewal
+- `MB_USERNAME` + `MB_PASSWORD` — session-based auth with auto-renewal
 
-Or run `mb auth login --host <url> --token <api-key>` to configure.
+**Option B — Interactive login:**
+```bash
+mb auth login --host https://metabase.example.com --token mb_xxxx
+# or
+mb auth login --host https://metabase.example.com --username user@co.com --password secret
+```
+
+Credentials are saved to `~/.config/mb/config.yml`.
 
 ## Commands
 

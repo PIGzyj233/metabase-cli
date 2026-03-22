@@ -4,13 +4,37 @@
   "description": "CLI tool for querying Metabase, designed for AI agents",
   "type": "module",
   "bin": {
-    "mb": "./dist/index.js"
+    "mb": "./dist/index.js",
+    "metabase-cli": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "skill.md"
+  ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "keywords": [
+    "metabase",
+    "cli",
+    "sql",
+    "database",
+    "ai-agent",
+    "mcp",
+    "business-intelligence",
+    "data-query"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PIGzyj233/metabase-cli.git"
+  },
+  "homepage": "https://github.com/PIGzyj233/metabase-cli#readme",
+  "bugs": {
+    "url": "https://github.com/PIGzyj233/metabase-cli/issues"
   },
   "engines": {
     "node": ">=18.0.0"
