@@ -9,6 +9,9 @@ import { registerDbMetadataCommand } from "./commands/db/metadata.js";
 import { registerDbSchemasCommand } from "./commands/db/schemas.js";
 import { registerDbTablesCommand } from "./commands/db/tables.js";
 import { registerQueryCommand } from "./commands/query.js";
+import { registerCardListCommand } from "./commands/card/list.js";
+import { registerCardViewCommand } from "./commands/card/view.js";
+import { registerCardRunCommand } from "./commands/card/run.js";
 
 const program = new Command();
 
@@ -41,5 +44,11 @@ registerDbMetadataCommand(dbCmd);
 
 // Query command
 registerQueryCommand(program);
+
+// Card commands
+const cardCmd = program.command("card").description("Saved cards/questions");
+registerCardListCommand(cardCmd);
+registerCardViewCommand(cardCmd);
+registerCardRunCommand(cardCmd);
 
 program.parse();
