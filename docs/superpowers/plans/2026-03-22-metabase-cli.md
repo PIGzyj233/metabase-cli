@@ -16,7 +16,7 @@ The original plan mixed shared runtime work, command-surface work, and final pac
 
 - [x] `2026-03-22-metabase-cli-01-foundation-core.md` — Tasks 1-5, scaffolding and shared runtime baseline
 - [x] `2026-03-22-metabase-cli-02-auth-commands.md` — Task 6, `auth login/logout/status`
-- [ ] `2026-03-22-metabase-cli-03-database-metadata.md` — Task 7, `db` metadata commands
+- [x] `2026-03-22-metabase-cli-03-database-metadata.md` — Task 7, `db` metadata commands
 - [ ] `2026-03-22-metabase-cli-04-query-and-card.md` — Tasks 8-9, SQL query and Card execution
 - [ ] `2026-03-22-metabase-cli-05-search-collection-release.md` — Tasks 10-11, search/collection plus final release checks
 
@@ -36,3 +36,4 @@ Plans 02-04 can proceed in parallel once Plan 01 is complete. Plan 05 Task 10 on
 
 - The detailed checkbox steps from the original plan were preserved in the new subplan files.
 - This index intentionally stays short so there is only one place to reason about sequencing and ownership.
+

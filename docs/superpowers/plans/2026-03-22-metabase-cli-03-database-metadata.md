@@ -28,7 +28,7 @@
 - Modify: `src/index.ts` — register db subcommands
 - Create: `tests/commands/db.test.ts`
 
-- [ ] **Step 1: Write tests for db commands**
+- [x] **Step 1: Write tests for db commands**
 
 Create `tests/commands/db.test.ts`:
 
@@ -139,12 +139,12 @@ describe("db commands", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pnpm test -- tests/commands/db.test.ts`
 Expected: FAIL — modules not found.
 
-- [ ] **Step 3: Implement db list**
+- [x] **Step 3: Implement db list**
 
 Create `src/commands/db/list.ts`:
 
@@ -183,7 +183,7 @@ export function registerDbListCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 4: Implement db schemas**
+- [x] **Step 4: Implement db schemas**
 
 Create `src/commands/db/schemas.ts`:
 
@@ -217,7 +217,7 @@ export function registerDbSchemasCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 5: Implement db tables**
+- [x] **Step 5: Implement db tables**
 
 Create `src/commands/db/tables.ts`:
 
@@ -269,7 +269,7 @@ export function registerDbTablesCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 6: Implement db fields**
+- [x] **Step 6: Implement db fields**
 
 Create `src/commands/db/fields.ts`:
 
@@ -307,7 +307,7 @@ export function registerDbFieldsCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 7: Implement db metadata**
+- [x] **Step 7: Implement db metadata**
 
 Create `src/commands/db/metadata.ts`:
 
@@ -335,7 +335,7 @@ export function registerDbMetadataCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 8: Register db commands in index.ts**
+- [x] **Step 8: Register db commands in index.ts**
 
 Add to `src/index.ts` after auth commands:
 
@@ -367,12 +367,12 @@ program
   .option("--omit-header", "Omit header in table/CSV output");
 ```
 
-- [ ] **Step 9: Run tests to verify they pass**
+- [x] **Step 9: Run tests to verify they pass**
 
 Run: `pnpm test -- tests/commands/db.test.ts`
 Expected: All tests PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add src/commands/db/ src/index.ts tests/commands/db.test.ts
@@ -380,4 +380,5 @@ git commit -m "feat: add db commands (list, schemas, tables, fields, metadata)"
 ```
 
 ---
+
 
