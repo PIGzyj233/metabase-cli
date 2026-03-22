@@ -17,6 +17,7 @@ export interface GlobalOptions {
   format?: "json" | "csv" | "table";
   json?: string;
   jq?: string;
+  header?: boolean;
   omitHeader?: boolean;
 }
 

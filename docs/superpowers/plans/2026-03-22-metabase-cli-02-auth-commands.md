@@ -26,7 +26,7 @@
 - Modify: `src/index.ts` — register auth subcommands
 - Create: `tests/commands/auth.test.ts`
 
-- [ ] **Step 1: Write tests for auth commands**
+- [x] **Step 1: Write tests for auth commands**
 
 Create `tests/commands/auth.test.ts`:
 
@@ -140,12 +140,12 @@ describe("auth commands", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `pnpm test -- tests/commands/auth.test.ts`
 Expected: FAIL — modules not found.
 
-- [ ] **Step 3: Implement login command**
+- [x] **Step 3: Implement login command**
 
 Create `src/commands/auth/login.ts`:
 
@@ -202,7 +202,7 @@ export function registerAuthLoginCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 4: Implement logout command**
+- [x] **Step 4: Implement logout command**
 
 Create `src/commands/auth/logout.ts`:
 
@@ -241,7 +241,7 @@ export function registerAuthLogoutCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 5: Implement status command**
+- [x] **Step 5: Implement status command**
 
 Create `src/commands/auth/status.ts`:
 
@@ -291,7 +291,7 @@ export function registerAuthStatusCommand(parent: Command): void {
 }
 ```
 
-- [ ] **Step 6: Register auth commands in index.ts**
+- [x] **Step 6: Register auth commands in index.ts**
 
 Update `src/index.ts`:
 
@@ -318,12 +318,12 @@ registerAuthStatusCommand(authCmd);
 program.parse();
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `pnpm test -- tests/commands/auth.test.ts`
 Expected: All tests PASS.
 
-- [ ] **Step 8: Manual smoke test**
+- [x] **Step 8: Manual smoke test**
 
 Run: `pnpm dev -- auth --help`
 Expected: Shows auth subcommands: login, logout, status.
@@ -334,7 +334,7 @@ Expected: stderr outputs "Logged in to example.com with API key."
 Run: `pnpm dev -- auth status`
 Expected: Shows "Logged in to example.com" with token type.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/commands/auth/ src/index.ts tests/commands/auth.test.ts
