@@ -3,3 +3,4 @@ dist/
 *.tsbuildinfo
 .env
 .ace-tool/
+.worktrees/
