@@ -2,17 +2,17 @@
 
 > Query Metabase databases from the terminal. Designed for AI agents.
 
-[![npm](https://img.shields.io/npm/v/metabase-cli)](https://www.npmjs.com/package/metabase-cli)
-[![license](https://img.shields.io/npm/l/metabase-cli)](https://github.com/PIGzyj233/metabase-cli/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/@pikaskill/metabase-cli)](https://www.npmjs.com/package/@pikaskill/metabase-cli)
+[![license](https://img.shields.io/npm/l/@pikaskill/metabase-cli)](https://github.com/PIGzyj233/metabase-cli/blob/main/LICENSE)
 
 ## Install
 
 ```bash
 # Global install
-npm install -g metabase-cli
+npm install -g @pikaskill/metabase-cli
 
 # Or run without installing
-npx metabase-cli <command>
+npx @pikaskill/metabase-cli <command>
 ```
 
 Requires Node.js >= 18.
@@ -79,7 +79,7 @@ mb collection list|view         Browse collections
 ## Uninstall
 
 ```bash
-npm uninstall -g metabase-cli
+npm uninstall -g @pikaskill/metabase-cli
 
 # Optional: remove config
 rm -rf ~/.config/mb

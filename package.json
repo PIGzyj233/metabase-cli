@@ -1,5 +1,5 @@
 {
-  "name": "metabase-cli",
+  "name": "@pikaskill/metabase-cli",
   "version": "0.1.0",
   "description": "CLI tool for querying Metabase, designed for AI agents",
   "type": "module",
