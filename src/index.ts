@@ -8,6 +8,7 @@ import { registerDbListCommand } from "./commands/db/list.js";
 import { registerDbMetadataCommand } from "./commands/db/metadata.js";
 import { registerDbSchemasCommand } from "./commands/db/schemas.js";
 import { registerDbTablesCommand } from "./commands/db/tables.js";
+import { registerQueryCommand } from "./commands/query.js";
 
 const program = new Command();
 
@@ -37,5 +38,8 @@ registerDbSchemasCommand(dbCmd);
 registerDbTablesCommand(dbCmd);
 registerDbFieldsCommand(dbCmd);
 registerDbMetadataCommand(dbCmd);
+
+// Query command
+registerQueryCommand(program);
 
 program.parse();
