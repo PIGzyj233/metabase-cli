@@ -1,10 +1,11 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
+import { resolveFormat } from "../../lib/config.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export async function handleCardList(
-  opts: GlobalOptions & { collection?: number }
+  opts: GlobalOptions & { collection?: string | number }
 ): Promise<any[]> {
   const client = createApiClient(opts);
 
@@ -24,9 +25,10 @@ export function registerCardListCommand(parent: Command): void {
   parent
     .command("list")
     .description("List saved cards/questions")
-    .option("--collection <id>", "Filter by collection", (v) => parseInt(v))
+    .option("--collection <id>", "Filter by collection")
     .action(async function (this: Command) {
       const opts = this.optsWithGlobals();
+      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const cards = await handleCardList(opts);
         const simplified = cards.map((c: any) => ({
@@ -34,7 +36,12 @@ export function registerCardListCommand(parent: Command): void {
           name: c.name,
           collection_id: c.collection_id,
         }));
-        output(simplified, opts);
+        output(simplified, {
+          format: resolveFormat(opts),
+          json: opts.json,
+          jq: opts.jq,
+          omitHeader,
+        });
       } catch (e: any) {
         process.stderr.write(`Error: ${e.message}\n`);
         process.exit(1);

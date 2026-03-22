@@ -23,7 +23,7 @@ program
 // Global flags — inherited by all subcommands
 program.option("--host <url>", "Override Metabase server URL");
 program.option("--token <value>", "Override authentication token");
-program.option("--format <type>", "Output format: json, csv, table", "json");
+program.option("--format <type>", "Output format: json, csv, table");
 program.option("--json <fields>", "Select specific fields in JSON output");
 program.option("--jq <expr>", "Filter JSON output with jmespath expression");
 program.option("--no-header", "Omit header row in table/CSV output");

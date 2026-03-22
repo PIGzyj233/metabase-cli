@@ -17,7 +17,7 @@ interface CardRunResult {
 
 async function resolveParameters(
   client: ReturnType<typeof createApiClient>,
-  cardId: number,
+  cardId: string | number,
   paramsJson: string
 ): Promise<any[]> {
   const userParams = JSON.parse(paramsJson);
@@ -47,7 +47,7 @@ async function resolveParameters(
 }
 
 export async function handleCardRun(
-  cardId: number,
+  cardId: string | number,
   opts: CardRunOptions
 ): Promise<CardRunResult> {
   const client = createApiClient(opts);
@@ -81,11 +81,14 @@ export function registerCardRunCommand(parent: Command): void {
     .option("--offset <n>", "Row offset", (v) => parseInt(v), 0)
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals();
+      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
-        const result = await handleCardRun(parseInt(cardId), opts);
+        const result = await handleCardRun(cardId, opts);
         output(result.data, {
-          ...opts,
           format: resolveFormat(opts),
+          json: opts.json,
+          jq: opts.jq,
+          omitHeader,
           pagination: result.pagination,
         });
       } catch (e: any) {

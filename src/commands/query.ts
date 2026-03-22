@@ -59,11 +59,14 @@ export function registerQueryCommand(program: Command): void {
     .option("--offset <n>", "Row offset for pagination", (v) => parseInt(v), 0)
     .action(async function (this: Command, sql: string) {
       const opts = this.optsWithGlobals();
+      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const result = await handleQuery(sql, opts);
         output(result.data, {
-          ...opts,
           format: resolveFormat(opts),
+          json: opts.json,
+          jq: opts.jq,
+          omitHeader,
           pagination: result.pagination,
         });
       } catch (e: any) {
