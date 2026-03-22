@@ -14,7 +14,14 @@ export async function handleSearch(
     params.models = opts.type;
   }
   const res = await client.get("/api/search", params);
-  return res.data || res;
+  let results = res.data || res;
+
+  // Client-side filter as fallback — Metabase API may return extra types
+  if (opts.type) {
+    results = results.filter((r: any) => r.model === opts.type);
+  }
+
+  return results;
 }
 
 export function registerSearchCommand(program: Command): void {
@@ -41,7 +48,7 @@ export function registerSearchCommand(program: Command): void {
         });
       } catch (e: any) {
         process.stderr.write(`Error: ${e.message}\n`);
-        process.exit(1);
+        process.exitCode = 1;
       }
     });
 }

@@ -35,7 +35,7 @@ export function registerCollectionViewCommand(parent: Command): void {
         });
       } catch (e: any) {
         process.stderr.write(`Error: ${e.message}\n`);
-        process.exit(1);
+        process.exitCode = 1;
       }
     });
 }

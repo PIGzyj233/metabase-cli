@@ -31,6 +31,10 @@ export async function handleQuery(
     native: { query: sql },
   });
 
+  if (res.status === "failed" || res.error) {
+    throw new Error(res.error || res.json_query?.error || "Query execution failed");
+  }
+
   const rows = res.data?.rows || [];
   const cols = res.data?.cols || [];
   const allData = formatQueryResult(rows, cols);
@@ -71,7 +75,7 @@ export function registerQueryCommand(program: Command): void {
         });
       } catch (e: any) {
         process.stderr.write(`Error: ${e.message}\n`);
-        process.exit(1);
+        process.exitCode = 1;
       }
     });
 }

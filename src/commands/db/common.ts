@@ -25,8 +25,8 @@ export function resolveOutputOptions(opts: DbCommandOptions) {
   };
 }
 
-export function handleCommandError(error: unknown): never {
+export function handleCommandError(error: unknown): void {
   const message = error instanceof Error ? error.message : String(error);
   process.stderr.write(`Error: ${message}\n`);
-  process.exit(1);
+  process.exitCode = 1;
 }

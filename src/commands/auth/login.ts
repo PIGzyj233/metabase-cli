@@ -48,8 +48,8 @@ export function registerAuthLoginCommand(parent: Command): void {
     .option("--token <value>", "API key for authentication")
     .option("--username <value>", "Username for password login")
     .option("--password <value>", "Password for password login")
-    .option("--host <url>", "Metabase server URL", process.env.MB_HOST)
-    .action(async (opts) => {
+    .action(async function (this: Command) {
+      const opts = this.optsWithGlobals();
       try {
         // Branch 1: explicit --token
         if (opts.token) {
@@ -79,7 +79,8 @@ export function registerAuthLoginCommand(parent: Command): void {
           const host = opts.host || await promptLine("Metabase host: ");
           if (!host) {
             process.stderr.write("Error: Host is required.\n");
-            process.exit(1);
+            process.exitCode = 1;
+            return;
           }
           const username = await promptLine("Username: ");
           const password = await promptLine("Password: ");
@@ -92,10 +93,10 @@ export function registerAuthLoginCommand(parent: Command): void {
         process.stderr.write(
           "Error: Provide --token, --username + --password, set MB_USERNAME + MB_PASSWORD, or run interactively.\n"
         );
-        process.exit(1);
+        process.exitCode = 1;
       } catch (e: any) {
         process.stderr.write(`Error: ${e.message}\n`);
-        process.exit(1);
+        process.exitCode = 1;
       }
     });
 }
