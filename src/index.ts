@@ -12,6 +12,9 @@ import { registerQueryCommand } from "./commands/query.js";
 import { registerCardListCommand } from "./commands/card/list.js";
 import { registerCardViewCommand } from "./commands/card/view.js";
 import { registerCardRunCommand } from "./commands/card/run.js";
+import { registerSearchCommand } from "./commands/search.js";
+import { registerCollectionListCommand } from "./commands/collection/list.js";
+import { registerCollectionViewCommand } from "./commands/collection/view.js";
 
 const program = new Command();
 
@@ -50,5 +53,13 @@ const cardCmd = program.command("card").description("Saved cards/questions");
 registerCardListCommand(cardCmd);
 registerCardViewCommand(cardCmd);
 registerCardRunCommand(cardCmd);
+
+// Search command
+registerSearchCommand(program);
+
+// Collection commands
+const collectionCmd = program.command("collection").description("Browse collections");
+registerCollectionListCommand(collectionCmd);
+registerCollectionViewCommand(collectionCmd);
 
 program.parse();
