@@ -159,5 +159,135 @@ describe("card commands", () => {
         handleCardRun(42, { params: '{"unknown_key": "value"}' })
       ).rejects.toThrow(/unknown_key/);
     });
+
+    it("resolves template-tags for native queries (dimension type)", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 3897,
+            parameters: [],
+            dataset_query: {
+              type: "native",
+              native: {
+                query: "SELECT * FROM orders WHERE {{biz_type}}",
+                "template-tags": {
+                  biz_type: {
+                    id: "tag-uuid-1",
+                    name: "biz_type",
+                    "display-name": "Biz Type",
+                    type: "dimension",
+                    "widget-type": "category",
+                    dimension: ["field", 123, null],
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          status: 200,
+          body: {
+            data: {
+              rows: [[200]],
+              cols: [{ name: "count", display_name: "Count", base_type: "type/Integer" }],
+            },
+          },
+        },
+      ]);
+      const { handleCardRun } = await import("../../src/commands/card/run.js");
+      const result = await handleCardRun(3897, {
+        templateTags: '{"biz_type": "68"}',
+      });
+      expect(result.data).toEqual([{ count: 200 }]);
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      const postBody = JSON.parse(calls[1].init?.body as string);
+      expect(postBody.parameters).toEqual([
+        {
+          id: "tag-uuid-1",
+          type: "category",
+          target: ["dimension", ["template-tag", "biz_type"]],
+          value: ["68"],
+        },
+      ]);
+    });
+
+    it("resolves template-tags for variable type", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 100,
+            parameters: [],
+            dataset_query: {
+              type: "native",
+              native: {
+                query: "SELECT * FROM orders WHERE name = {{name}}",
+                "template-tags": {
+                  name: {
+                    id: "tag-uuid-2",
+                    name: "name",
+                    "display-name": "Name",
+                    type: "text",
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          status: 200,
+          body: {
+            data: {
+              rows: [["Alice"]],
+              cols: [{ name: "name", display_name: "Name", base_type: "type/Text" }],
+            },
+          },
+        },
+      ]);
+      const { handleCardRun } = await import("../../src/commands/card/run.js");
+      const result = await handleCardRun(100, {
+        templateTags: '{"name": "Alice"}',
+      });
+      expect(result.data).toEqual([{ name: "Alice" }]);
+
+      const calls = getFetchCalls();
+      const postBody = JSON.parse(calls[1].init?.body as string);
+      expect(postBody.parameters).toEqual([
+        {
+          id: "tag-uuid-2",
+          type: "text",
+          target: ["variable", ["template-tag", "name"]],
+          value: "Alice",
+        },
+      ]);
+    });
+
+    it("throws error for unknown template tag key", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            parameters: [],
+            dataset_query: {
+              type: "native",
+              native: {
+                query: "SELECT 1",
+                "template-tags": {
+                  biz_type: { id: "t1", name: "biz_type", type: "text" },
+                },
+              },
+            },
+          },
+        },
+      ]);
+      const { handleCardRun } = await import("../../src/commands/card/run.js");
+      await expect(
+        handleCardRun(42, { templateTags: '{"unknown_tag": "value"}' })
+      ).rejects.toThrow(/unknown_tag/);
+    });
   });
 });

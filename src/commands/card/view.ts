@@ -19,17 +19,27 @@ export function registerCardViewCommand(parent: Command): void {
       try {
         const card = await handleCardView(cardId, opts);
         // Show relevant fields for AI agents
+        const params = (card.parameters || []).map((p: any) => ({
+          slug: p.slug,
+          name: p.name,
+          type: p.type,
+        }));
+        const templateTags = Object.entries(
+          card.dataset_query?.native?.["template-tags"] || {}
+        ).map(([key, tag]: [string, any]) => ({
+          name: key,
+          display_name: tag["display-name"],
+          type: tag.type,
+          widget_type: tag["widget-type"] || null,
+        }));
         const summary = [{
           id: card.id,
           name: card.name,
           description: card.description,
           query_type: card.dataset_query?.type,
           query: card.dataset_query?.native?.query || card.dataset_query,
-          parameters: (card.parameters || []).map((p: any) => ({
-            slug: p.slug,
-            name: p.name,
-            type: p.type,
-          })),
+          parameters: params,
+          template_tags: templateTags,
         }];
         output(summary, {
           format: resolveFormat(opts),
