@@ -90,8 +90,9 @@ Credentials are saved to `~/.config/mb/config.yml`.
 |---------|-------------|
 | `mb query "<sql>" --db <id>` | Execute native SQL |
 | `mb card list [--collection <id>]` | List saved cards |
-| `mb card view <card-id>` | View card definition and parameters |
-| `mb card run <card-id> [--params '{"key":"val"}']` | Run saved card |
+| `mb card view <card-id>` | View card definition, parameters, and template tags |
+| `mb card run <card-id> [--params '{"key":"val"}']` | Run saved card (uses `card.parameters`) |
+| `mb card run <card-id> [--template-tags '{"key":"val"}']` | Run native SQL card (uses template tags) |
 
 ### Search & Browse
 | Command | Description |
@@ -115,8 +116,16 @@ All commands support: `--format json|csv|table` (default: json), `--json <fields
 
 Or find existing reports:
 1. `mb search "<keyword>"` — find saved cards/dashboards
-2. `mb card view <id>` — check parameters needed
-3. `mb card run <id> --params '{"key":"value"}'` — execute
+2. `mb card view <id>` — check parameters and template tags
+3. `mb card run <id> --params '{"key":"value"}'` — execute with parameters
+4. `mb card run <id> --template-tags '{"key":"value"}'` — execute native SQL card with template tags
+
+### Template Tags vs Parameters
+
+Native SQL cards use **template tags** (e.g. `{{biz_type}}` in SQL). These are stored in `dataset_query.native["template-tags"]`, not in `card.parameters`.
+
+- Use `--params` when `card view` shows entries in `parameters`
+- Use `--template-tags` when `card view` shows entries in `template_tags` (and `parameters` is empty)
 
 ## Output
 
