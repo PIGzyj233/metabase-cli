@@ -61,6 +61,25 @@ describe("auth commands", () => {
       expect(content).toContain("session_token_abc");
       expect(content).toContain("session");
     });
+
+    it("stores host subpath in config", async () => {
+      mockFetch([
+        { status: 200, body: { id: "session_token_subpath" } },
+      ]);
+      const { handleLoginPassword } = await import(
+        "../../src/commands/auth/login.js"
+      );
+      await handleLoginPassword(
+        "https://metabase.test.com/root",
+        "admin@test.com",
+        "password123"
+      );
+
+      const configPath = join(testHome, ".config", "mb", "config.yml");
+      const content = readFileSync(configPath, "utf-8");
+      expect(content).toContain("metabase.test.com/root");
+      expect(content).toContain("session_token_subpath");
+    });
   });
 
   describe("login with MB_HOST env (--host not required)", () => {

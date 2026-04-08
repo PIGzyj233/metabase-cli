@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { mockFetch, resetMock, getFetchCalls } from "../helpers/mock-server.js";
@@ -74,6 +74,422 @@ describe("card commands", () => {
       expect(result.name).toBe("Revenue Report");
       expect(result.parameters).toHaveLength(1);
       expect(result.parameters[0].slug).toBe("start_date");
+    });
+  });
+
+  describe("card create", () => {
+    it("creates a card from inline flags with required defaults", async () => {
+      mockFetch([{
+        status: 200,
+        body: { id: 99, name: "My Query", display: "table" },
+      }]);
+      const { handleCardCreate } = await import("../../src/commands/card/create.js");
+      const result = await handleCardCreate({
+        name: "My Query",
+        database: "1",
+        sql: "SELECT 1",
+      });
+
+      expect(result).toEqual({ id: 99, name: "My Query", display: "table" });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init?.method).toBe("POST");
+      expect(calls[0].url).toMatch(/\/api\/card$/);
+      expect(JSON.parse(calls[0].init?.body as string)).toEqual({
+        name: "My Query",
+        display: "table",
+        type: "question",
+        visualization_settings: {},
+        dataset_query: {
+          type: "native",
+          database: 1,
+          native: {
+            query: "SELECT 1",
+          },
+        },
+      });
+    });
+
+    it("creates a card from a --from JSON file", async () => {
+      mockFetch([{
+        status: 200,
+        body: { id: 101, name: "Imported Card" },
+      }]);
+      const payload = {
+        name: "Imported Card",
+        display: "table",
+        visualization_settings: {},
+        dataset_query: {
+          type: "native",
+          database: 1,
+          native: {
+            query: "SELECT 1",
+          },
+        },
+      };
+      const filePath = join(testHome, "card-create.json");
+      writeFileSync(filePath, JSON.stringify(payload), "utf8");
+
+      const { handleCardCreate } = await import("../../src/commands/card/create.js");
+      await handleCardCreate({ from: filePath });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(1);
+      expect(JSON.parse(calls[0].init?.body as string)).toEqual(payload);
+    });
+
+    it("rejects --from combined with inline flags before any API call", async () => {
+      const payload = {
+        name: "Imported Card",
+        display: "table",
+        visualization_settings: {},
+        dataset_query: {
+          type: "native",
+          database: 1,
+          native: {
+            query: "SELECT 1",
+          },
+        },
+      };
+      const filePath = join(testHome, "card-create.json");
+      writeFileSync(filePath, JSON.stringify(payload), "utf8");
+
+      const { handleCardCreate } = await import("../../src/commands/card/create.js");
+      await expect(
+        handleCardCreate({ from: filePath, name: "Override" })
+      ).rejects.toThrow(/--from/);
+      expect(getFetchCalls()).toHaveLength(0);
+    });
+
+    it("rejects missing inline required flags before any API call", async () => {
+      const { handleCardCreate } = await import("../../src/commands/card/create.js");
+      await expect(
+        handleCardCreate({ name: "Missing SQL", database: "1" })
+      ).rejects.toThrow("Inline mode requires --name, --database, and --sql.");
+      expect(getFetchCalls()).toHaveLength(0);
+    });
+
+    it("rejects non-object file payloads before any API call", async () => {
+      const filePath = join(testHome, "card-create-invalid.json");
+      writeFileSync(filePath, JSON.stringify([1, 2, 3]), "utf8");
+
+      const { handleCardCreate } = await import("../../src/commands/card/create.js");
+      await expect(
+        handleCardCreate({ from: filePath })
+      ).rejects.toThrow(/must be an object/i);
+      expect(getFetchCalls()).toHaveLength(0);
+    });
+  });
+
+  describe("card update", () => {
+    it("updates a card via fetch-then-merge and preserves required fields", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            description: "Original description",
+            display: "table",
+            visualization_settings: { column_settings: {} },
+            dataset_query: {
+              type: "native",
+              database: 1,
+              native: { query: "SELECT 1" },
+            },
+            collection_id: 5,
+          },
+        },
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "New Name",
+          },
+        },
+      ]);
+
+      const { handleCardUpdate } = await import("../../src/commands/card/update.js");
+      await handleCardUpdate(42, { name: "New Name" });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      expect(calls[0].init?.method).toBe("GET");
+      expect(calls[1].init?.method).toBe("PUT");
+      const putBody = JSON.parse(calls[1].init?.body as string);
+      expect(putBody.name).toBe("New Name");
+      expect(putBody.dataset_query).toEqual({
+        type: "native",
+        database: 1,
+        native: { query: "SELECT 1" },
+      });
+      expect(putBody.display).toBe("table");
+      expect(putBody.visualization_settings).toEqual({ column_settings: {} });
+      expect(putBody.collection_id).toBe(5);
+    });
+
+    it("updates native SQL cards with inline --sql", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            display: "table",
+            visualization_settings: {},
+            dataset_query: {
+              type: "native",
+              database: 1,
+              native: { query: "SELECT 1" },
+            },
+          },
+        },
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+          },
+        },
+      ]);
+
+      const { handleCardUpdate } = await import("../../src/commands/card/update.js");
+      await handleCardUpdate(42, { sql: "SELECT 2" });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      const putBody = JSON.parse(calls[1].init?.body as string);
+      expect(putBody.dataset_query).toEqual({
+        type: "native",
+        database: 1,
+        native: { query: "SELECT 2" },
+      });
+      expect(putBody.display).toBe("table");
+      expect(putBody.visualization_settings).toEqual({});
+    });
+
+    it("accepts NanoID collection identifiers for updates", async () => {
+      const nanoId = "V1StGXR8_Z5jdHi6B-myT";
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            display: "table",
+            visualization_settings: {},
+            dataset_query: {
+              type: "native",
+              database: 1,
+              native: { query: "SELECT 1" },
+            },
+            collection_id: 5,
+          },
+        },
+        {
+          status: 200,
+          body: {
+            id: 42,
+            collection_id: nanoId,
+          },
+        },
+      ]);
+
+      const { handleCardUpdate } = await import("../../src/commands/card/update.js");
+      await handleCardUpdate(42, { collection: nanoId });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      const putBody = JSON.parse(calls[1].init?.body as string);
+      expect(putBody.collection_id).toBe(nanoId);
+      expect(putBody.dataset_query).toEqual({
+        type: "native",
+        database: 1,
+        native: { query: "SELECT 1" },
+      });
+    });
+
+    it("rejects inline --sql for non-native cards before PUT", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "MBQL Card",
+            display: "table",
+            visualization_settings: {},
+            dataset_query: {
+              type: "query",
+              query: { "source-table": 1 },
+            },
+          },
+        },
+      ]);
+
+      const { handleCardUpdate } = await import("../../src/commands/card/update.js");
+      await expect(
+        handleCardUpdate(42, { sql: "SELECT 2" })
+      ).rejects.toThrow(/native-query/i);
+      expect(getFetchCalls()).toHaveLength(1);
+      expect(getFetchCalls()[0].init?.method).toBe("GET");
+    });
+
+    it("rejects --from combined with inline update flags before PUT", async () => {
+      const filePath = join(testHome, "card-update-patch.json");
+      writeFileSync(filePath, JSON.stringify({ name: "Patched Name" }), "utf8");
+
+      const { handleCardUpdate } = await import("../../src/commands/card/update.js");
+      await expect(
+        handleCardUpdate(42, { from: filePath, name: "Override" })
+      ).rejects.toThrow(/--from/);
+      expect(getFetchCalls()).toHaveLength(0);
+    });
+
+    it("merges a JSON patch file onto the fetched card", async () => {
+      const filePath = join(testHome, "card-update-patch.json");
+      writeFileSync(
+        filePath,
+        JSON.stringify({
+          description: "Updated description",
+          archived: true,
+        }),
+        "utf8"
+      );
+
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            description: "Original description",
+            display: "table",
+            visualization_settings: {},
+            dataset_query: {
+              type: "native",
+              database: 1,
+              native: { query: "SELECT 1" },
+            },
+          },
+        },
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            description: "Updated description",
+            archived: true,
+          },
+        },
+      ]);
+
+      const { handleCardUpdate } = await import("../../src/commands/card/update.js");
+      await handleCardUpdate(42, { from: filePath });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      const putBody = JSON.parse(calls[1].init?.body as string);
+      expect(putBody.description).toBe("Updated description");
+      expect(putBody.archived).toBe(true);
+      expect(putBody.dataset_query).toEqual({
+        type: "native",
+        database: 1,
+        native: { query: "SELECT 1" },
+      });
+      expect(putBody.display).toBe("table");
+      expect(putBody.visualization_settings).toEqual({});
+    });
+  });
+
+  describe("card delete/archive", () => {
+    it("archives on delete by default", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            display: "table",
+            visualization_settings: {},
+            dataset_query: {
+              type: "native",
+              database: 1,
+              native: { query: "SELECT 1" },
+            },
+            archived: false,
+          },
+        },
+        {
+          status: 200,
+          body: {
+            id: 42,
+            archived: true,
+          },
+        },
+      ]);
+
+      const { handleCardDelete } = await import("../../src/commands/card/delete.js");
+      const result = await handleCardDelete(42, {});
+      expect(result).toEqual({ mode: "archived", id: 42 });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      const putBody = JSON.parse(calls[1].init?.body as string);
+      expect(putBody.archived).toBe(true);
+    });
+
+    it("hard deletes cards without throwing on 204", async () => {
+      mockFetch([
+        {
+          status: 204,
+          body: null,
+        },
+      ]);
+
+      const { handleCardDelete } = await import("../../src/commands/card/delete.js");
+      const result = await handleCardDelete(42, { hardDelete: true });
+      expect(result).toEqual({ mode: "deleted", id: 42 });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(1);
+      expect(calls[0].init?.method).toBe("DELETE");
+    });
+
+    it("archives via the archive wrapper", async () => {
+      mockFetch([
+        {
+          status: 200,
+          body: {
+            id: 42,
+            name: "Old Name",
+            display: "table",
+            visualization_settings: {},
+            dataset_query: {
+              type: "native",
+              database: 1,
+              native: { query: "SELECT 1" },
+            },
+            archived: false,
+          },
+        },
+        {
+          status: 200,
+          body: {
+            id: 42,
+            archived: true,
+          },
+        },
+      ]);
+
+      const { handleCardArchive } = await import("../../src/commands/card/archive.js");
+      const result = await handleCardArchive(42, {});
+      expect(result).toEqual({ mode: "archived", id: 42 });
+
+      const calls = getFetchCalls();
+      expect(calls).toHaveLength(2);
+      const putBody = JSON.parse(calls[1].init?.body as string);
+      expect(putBody.archived).toBe(true);
     });
   });
 

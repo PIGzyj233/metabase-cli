@@ -34,18 +34,26 @@ export function saveConfig(config: Config): void {
   writeFileSync(configPath, stringify(config), "utf-8");
 }
 
+export function normalizeHostKey(raw: string): string {
+  const trimmed = raw.trim();
+  const candidate = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+
+  try {
+    const url = new URL(candidate);
+    const pathname = url.pathname.replace(/\/+$/, "");
+    return `${url.host}${pathname === "" || pathname === "/" ? "" : pathname}`;
+  } catch {
+    return trimmed.replace(/\/+$/, "");
+  }
+}
+
 export function resolveHost(opts: GlobalOptions): string | undefined {
   const raw = opts.host || process.env.MB_HOST;
   if (!raw) {
     const config = loadConfig();
     return config.current_host;
   }
-  // Strip protocol to get hostname
-  try {
-    return new URL(raw).hostname;
-  } catch {
-    return raw;
-  }
+  return normalizeHostKey(raw);
 }
 
 export function resolveHostUrl(opts: GlobalOptions): string | undefined {

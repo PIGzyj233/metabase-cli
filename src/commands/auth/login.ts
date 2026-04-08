@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { createInterface } from "node:readline";
 import { storeToken, loginWithPassword, detectTokenType } from "../../lib/auth.js";
+import { normalizeHostKey } from "../../lib/config.js";
 
 function resolveHostArg(host?: string): string {
   const resolved = host || process.env.MB_HOST;
@@ -13,9 +14,10 @@ function resolveHostArg(host?: string): string {
 export async function handleLoginToken(host: string, token: string): Promise<void> {
   const url = new URL(host.startsWith("http") ? host : `https://${host}`);
   const tokenType = detectTokenType(token);
-  storeToken(url.hostname, url.protocol.replace(":", ""), token, tokenType);
+  const hostKey = normalizeHostKey(host);
+  storeToken(hostKey, url.protocol.replace(":", ""), token, tokenType);
   process.stderr.write(
-    `Logged in to ${url.hostname} with ${tokenType === "api_key" ? "API key" : "session token"}.\n`
+    `Logged in to ${hostKey} with ${tokenType === "api_key" ? "API key" : "session token"}.\n`
   );
 }
 
@@ -27,8 +29,9 @@ export async function handleLoginPassword(
   const baseUrl = host.startsWith("http") ? host : `https://${host}`;
   const url = new URL(baseUrl);
   const sessionToken = await loginWithPassword(baseUrl, username, password);
-  storeToken(url.hostname, url.protocol.replace(":", ""), sessionToken, "session", username);
-  process.stderr.write(`Logged in to ${url.hostname} as ${username}.\n`);
+  const hostKey = normalizeHostKey(baseUrl);
+  storeToken(hostKey, url.protocol.replace(":", ""), sessionToken, "session", username);
+  process.stderr.write(`Logged in to ${hostKey} as ${username}.\n`);
 }
 
 async function promptLine(prompt: string, hidden = false): Promise<string> {

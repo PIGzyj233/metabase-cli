@@ -90,9 +90,16 @@ Credentials are saved to `~/.config/mb/config.yml`.
 |---------|-------------|
 | `mb query "<sql>" --db <id>` | Execute native SQL |
 | `mb card list [--collection <id>]` | List saved cards |
+| `mb card create --name <name> --database <id> --sql "<sql>"` | Create a native SQL card |
+| `mb card create --from <file>` | Create a card from a JSON payload file |
 | `mb card view <card-id>` | View card definition, parameters, and template tags |
 | `mb card run <card-id> [--params '{"key":"val"}']` | Run saved card (uses `card.parameters`) |
 | `mb card run <card-id> [--template-tags '{"key":"val"}']` | Run native SQL card (uses template tags) |
+| `mb card update <card-id> [--name ...] [--description ...] [--collection <id>] [--sql "<sql>"]` | Safely update a card via fetch-then-merge |
+| `mb card update <card-id> --from <file>` | Apply a JSON patch file to an existing card |
+| `mb card delete <card-id>` | Archive a card (safe default) |
+| `mb card delete <card-id> --hard-delete` | Permanently delete a card |
+| `mb card archive <card-id>` | Explicit archive alias |
 
 ### Search & Browse
 | Command | Description |
@@ -126,6 +133,39 @@ Native SQL cards use **template tags** (e.g. `{{biz_type}}` in SQL). These are s
 
 - Use `--params` when `card view` shows entries in `parameters`
 - Use `--template-tags` when `card view` shows entries in `template_tags` (and `parameters` is empty)
+
+## Card Write Operations
+
+### Create cards
+
+```bash
+mb card create --name "My Query" --database 1 --sql "SELECT 1"
+mb card create --from card.json
+```
+
+`--from` cannot be combined with inline create flags.
+
+### Update cards
+
+```bash
+mb card update 123 --name "New Name"
+mb card update 123 --sql "SELECT * FROM orders LIMIT 10"
+mb card update 123 --from patch.json
+```
+
+`mb card update` uses fetch-then-merge: it reads the current card first, applies your patch, and preserves unspecified required fields such as `dataset_query`, `display`, and `visualization_settings`.
+
+Inline `--sql` only supports native-query cards. Use `--from` for non-native or more complex updates.
+
+### Delete and archive cards
+
+```bash
+mb card delete 123
+mb card archive 123
+mb card delete 123 --hard-delete
+```
+
+`mb card delete` archives by default, `mb card archive` is the explicit alias for that safe path, and `--hard-delete` is irreversible.
 
 ## Output
 

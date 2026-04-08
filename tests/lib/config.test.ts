@@ -93,6 +93,20 @@ hosts:
     expect(host).toBe("cli.example.com");
   });
 
+  it("preserves subpath when resolving host from env var", async () => {
+    vi.stubEnv("MB_HOST", "https://env.example.com/metabase");
+    const { resolveHost } = await import("../../src/lib/config.js");
+    const host = resolveHost({});
+    expect(host).toBe("env.example.com/metabase");
+  });
+
+  it("preserves subpath when resolving host from CLI flag", async () => {
+    vi.stubEnv("MB_HOST", "https://env.example.com/root");
+    const { resolveHost } = await import("../../src/lib/config.js");
+    const host = resolveHost({ host: "https://cli.example.com/metabase" });
+    expect(host).toBe("cli.example.com/metabase");
+  });
+
   it("resolves default_db from env var MB_DEFAULT_DB", async () => {
     vi.stubEnv("MB_DEFAULT_DB", "5");
     const { resolveDefaultDb } = await import("../../src/lib/config.js");

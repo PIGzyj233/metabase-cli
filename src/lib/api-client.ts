@@ -21,6 +21,7 @@ export class ApiError extends Error {
 export interface ApiClient {
   get(path: string, params?: Record<string, string>): Promise<any>;
   post(path: string, body?: any): Promise<any>;
+  put(path: string, body?: any, params?: Record<string, string>): Promise<any>;
   delete(path: string): Promise<any>;
 }
 
@@ -83,6 +84,9 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
             retryBody.message || `HTTP ${retryRes.status}`
           );
         }
+        if (retryRes.status === 204) {
+          return null;
+        }
         return retryRes.json();
       }
       throw new ApiError(
@@ -99,6 +103,10 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
       );
     }
 
+    if (res.status === 204) {
+      return null;
+    }
+
     return res.json();
   }
 
@@ -113,6 +121,14 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
     },
     post(path: string, body?: any) {
       return request("POST", path, body);
+    },
+    put(path: string, body?: any, params?: Record<string, string>) {
+      let url = path;
+      if (params) {
+        const qs = new URLSearchParams(params).toString();
+        url = `${path}?${qs}`;
+      }
+      return request("PUT", url, body);
     },
     delete(path: string) {
       return request("DELETE", path);

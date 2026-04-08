@@ -10,6 +10,10 @@ import { registerDbSchemasCommand } from "./commands/db/schemas.js";
 import { registerDbTablesCommand } from "./commands/db/tables.js";
 import { registerQueryCommand } from "./commands/query.js";
 import { registerCardListCommand } from "./commands/card/list.js";
+import { registerCardCreateCommand } from "./commands/card/create.js";
+import { registerCardUpdateCommand } from "./commands/card/update.js";
+import { registerCardDeleteCommand } from "./commands/card/delete.js";
+import { registerCardArchiveCommand } from "./commands/card/archive.js";
 import { registerCardViewCommand } from "./commands/card/view.js";
 import { registerCardRunCommand } from "./commands/card/run.js";
 import { registerSearchCommand } from "./commands/search.js";
@@ -51,6 +55,10 @@ registerQueryCommand(program);
 // Card commands
 const cardCmd = program.command("card").description("Saved cards/questions");
 registerCardListCommand(cardCmd);
+registerCardCreateCommand(cardCmd);
+registerCardUpdateCommand(cardCmd);
+registerCardDeleteCommand(cardCmd);
+registerCardArchiveCommand(cardCmd);
 registerCardViewCommand(cardCmd);
 registerCardRunCommand(cardCmd);
 

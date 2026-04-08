@@ -23,7 +23,12 @@ export function mockFetch(responses: MockResponse[]) {
       ok: response.status >= 200 && response.status < 300,
       status: response.status,
       statusText: response.status === 200 ? "OK" : "Error",
-      json: async () => response.body,
+      json: async () => {
+        if (response.body === null || response.body === undefined) {
+          throw new SyntaxError("Unexpected end of JSON input");
+        }
+        return response.body;
+      },
       text: async () => JSON.stringify(response.body),
       headers: new Headers(response.headers || {}),
     } as Response;
