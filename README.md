@@ -48,6 +48,12 @@ Pick one:
 
 Credentials are saved to `~/.config/mb/config.yml`.
 
+`--host <url>` is the base URL of your Metabase instance, for example
+`https://metabase.example.com` or `metabase.example.com`. If the protocol is
+omitted, `https://` is used. You can also set `MB_HOST` instead of passing
+`--host`; this is required for non-interactive login unless a host is already
+provided by the environment.
+
 ## Commands
 
 ```

@@ -1,0 +1,105 @@
+---
+name: metabase
+description: Query data from Metabase databases using the `mb` CLI tool. Use when the user needs to query business databases, run SQL, view saved reports, or explore database structure via Metabase. Make sure to use this skill whenever the user mentions Metabase, business data queries, saved questions/cards, database schema exploration, or wants to run SQL against a BI platform, even if they don't explicitly say "metabase".
+---
+
+# Metabase CLI (`mb`)
+
+Query Metabase databases from the terminal. Designed for AI agent use — JSON output by default, pagination info to stderr, structured errors.
+
+## Installation
+
+```bash
+# Global install (recommended)
+npm install -g @pikaskill/metabase-cli
+
+# Or run without installing
+npx @pikaskill/metabase-cli <command>
+```
+
+Requires Node.js >= 18.
+
+## Prerequisites
+
+Configure authentication before use (pick one):
+
+**Option A — Environment variables:**
+- `MB_HOST` — Metabase server URL (e.g., `https://metabase.example.com`)
+- `MB_TOKEN` — API key (starts with `mb_`), OR
+- `MB_USERNAME` + `MB_PASSWORD` — session-based auth with auto-renewal
+
+**Option B — Interactive login:**
+```bash
+mb auth login --host https://metabase.example.com --token mb_xxxx
+# or
+mb auth login --host https://metabase.example.com --username user@co.com --password secret
+```
+
+Credentials are saved to `~/.config/mb/config.yml`.
+
+## Commands
+
+### Authentication
+| Command | Description |
+|---------|-------------|
+| `mb auth login --host <url> --token <key>` | Login with API key |
+| `mb auth login --host <url> --username <u> --password <p>` | Login with password |
+| `mb auth status` | Show current auth state |
+| `mb auth logout` | Clear credentials |
+
+### Database Exploration
+| Command | Description |
+|---------|-------------|
+| `mb db list` | List all databases |
+| `mb db schemas <db-id>` | List schemas in a database |
+| `mb db tables <db-id> [--schema <name>]` | List tables |
+| `mb db fields <table-id>` | List table fields (name, type, description) |
+| `mb db metadata <db-id>` | Full database metadata |
+
+### Query Execution
+| Command | Description |
+|---------|-------------|
+| `mb query "<sql>" --db <id>` | Execute native SQL |
+| `mb card list [--collection <id>]` | List saved cards |
+| `mb card view <card-id>` | View card definition, parameters, and template tags |
+| `mb card run <card-id> [--params '{"key":"val"}']` | Run saved card (uses `card.parameters`) |
+| `mb card run <card-id> [--template-tags '{"key":"val"}']` | Run native SQL card (uses template tags) |
+
+### Search & Browse
+| Command | Description |
+|---------|-------------|
+| `mb search <query> [--type card\|dashboard\|collection\|table]` | Search Metabase |
+| `mb collection list [--parent <id>]` | List collections |
+| `mb collection view <id>` | View collection contents |
+
+### Global Flags
+All commands support: `--format json|csv|table` (default: json), `--json <fields>`, `--jq <jmespath-expr>`, `--no-header`.
+
+`query` and `card run` also support: `--limit <n>` (default: 100), `--offset <n>` for pagination.
+
+## Recommended Workflow
+
+1. `mb db list` — discover available databases
+2. `mb db tables <db-id>` — see tables in a database
+3. `mb db fields <table-id>` — understand table schema
+4. `mb query "SELECT ..." --db <id>` — run your query
+5. If query returned many rows, use `--offset` to paginate
+
+Or find existing reports:
+1. `mb search "<keyword>"` — find saved cards/dashboards
+2. `mb card view <id>` — check parameters and template tags
+3. `mb card run <id> --params '{"key":"value"}'` — execute with parameters
+4. `mb card run <id> --template-tags '{"key":"value"}'` — execute native SQL card with template tags
+
+### Template Tags vs Parameters
+
+Native SQL cards use **template tags** (e.g. `{{biz_type}}` in SQL). These are stored in `dataset_query.native["template-tags"]`, not in `card.parameters`.
+
+- Use `--params` when `card view` shows entries in `parameters`
+- Use `--template-tags` when `card view` shows entries in `template_tags` (and `parameters` is empty)
+
+## Output
+
+- Default output is JSON (array of objects), ideal for AI parsing
+- Pagination info goes to stderr, e.g.: `// Showing rows 1-100 of 1523`
+- Errors go to stderr with exit code 1
