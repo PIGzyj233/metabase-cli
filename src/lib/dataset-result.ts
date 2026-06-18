@@ -1,5 +1,6 @@
 import type { PaginationInfo } from "../types/index.js";
 import { formatQueryResult } from "./formatter.js";
+import { humanizeQueryError } from "./error-message.js";
 
 export interface DatasetResultOptions {
   limit?: number;
@@ -17,7 +18,9 @@ export function unpackDatasetResult(
   options: DatasetResultOptions,
 ): DatasetResult {
   if (raw.status === "failed" || raw.error) {
-    throw new Error(raw.error || raw.json_query?.error || options.failureMessage);
+    throw new Error(
+      humanizeQueryError(raw.error || raw.json_query?.error || options.failureMessage),
+    );
   }
 
   const rows = raw.data?.rows || [];

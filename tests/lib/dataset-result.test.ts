@@ -113,4 +113,38 @@ describe("dataset-result", () => {
       ),
     ).toThrow("JSON query error");
   });
+
+  it("humanizes schema-validation errors thrown from the failed path", () => {
+    expect(() =>
+      unpackDatasetResult(
+        {
+          status: "failed",
+          error:
+            "Output of parse-tokens does not match schema: [(not (matches-some-precondition? nil))]",
+        },
+        { failureMessage: "Query execution failed" },
+      ),
+    ).toThrow(/Hint:/);
+    expect(() =>
+      unpackDatasetResult(
+        {
+          status: "failed",
+          error:
+            "Output of parse-tokens does not match schema: [(not (matches-some-precondition? nil))]",
+        },
+        { failureMessage: "Query execution failed" },
+      ),
+    ).toThrow(/parse-tokens/);
+  });
+
+  it("passes real SQL errors through verbatim from the failed path", () => {
+    const sqlError =
+      "ClickHouse exception, code: 60, host: 10.53.240.195, port: 8123; Code: 60, e.displayText() = DB::Exception: Table game.dwd_cloudgame_game_flow_inc doesn't exist";
+    expect(() =>
+      unpackDatasetResult(
+        { status: "failed", error: sqlError },
+        { failureMessage: "Query execution failed" },
+      ),
+    ).toThrow(sqlError);
+  });
 });

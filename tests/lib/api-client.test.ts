@@ -189,4 +189,62 @@ describe("api-client", () => {
     const result = await client.put("/api/card/1", { archived: true });
     expect(result).toBeNull();
   });
+
+  it("humanizes schema-validation errors on /api/dataset 400", async () => {
+    mockFetch([
+      {
+        status: 400,
+        body: {
+          message:
+            "Output of parse-tokens does not match schema: [(not (matches-some-precondition? nil))]",
+        },
+      },
+    ]);
+    const { createApiClient, ApiError } = await import("../../src/lib/api-client.js");
+    const client = createApiClient({});
+    const err = await client
+      .post("/api/dataset", { database: 1, type: "native", native: { query: "SELECT 1" } })
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.message).toMatch(/^Hint:/);
+    expect(err.message).toMatch(/parse-tokens/);
+  });
+
+  it("humanizes schema-validation errors on /api/card/:id/query 400", async () => {
+    mockFetch([
+      {
+        status: 400,
+        body: {
+          message:
+            "Input to date-string->range does not match schema: [(named ... date-string) nil]",
+        },
+      },
+    ]);
+    const { createApiClient, ApiError } = await import("../../src/lib/api-client.js");
+    const client = createApiClient({});
+    const err = await client.post("/api/card/1/query", { ignore_cache: false }).catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.message).toMatch(/^Hint:/);
+    expect(err.message).toMatch(/date-string->range/);
+  });
+
+  it("does not humanize non-schema messages on unrelated endpoints (over-broadening guard)", async () => {
+    mockFetch([{ status: 404, body: { message: "Not found" } }]);
+    const { createApiClient } = await import("../../src/lib/api-client.js");
+    const client = createApiClient({});
+    await expect(client.get("/api/database")).rejects.toThrow("Not found");
+  });
+
+  it("passes real SQL errors through verbatim on /api/dataset 400", async () => {
+    const sqlError =
+      "ClickHouse exception, code: 60, host: 10.53.240.195, port: 8123; Code: 60, e.displayText() = DB::Exception: Table game.dwd_cloudgame_game_flow_inc doesn't exist";
+    mockFetch([{ status: 400, body: { message: sqlError } }]);
+    const { createApiClient, ApiError } = await import("../../src/lib/api-client.js");
+    const client = createApiClient({});
+    const err = await client
+      .post("/api/dataset", { database: 1, type: "native", native: { query: "SELECT 1" } })
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.message).toBe(sqlError);
+  });
 });

@@ -6,6 +6,7 @@ import {
   type TokenInfo,
 } from "./auth.js";
 import { resolveHostUrl, resolveHost } from "./config.js";
+import { humanizeQueryError } from "./error-message.js";
 import type { GlobalOptions } from "../types/index.js";
 
 export class ApiError extends Error {
@@ -81,7 +82,7 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
           const retryBody = await retryRes.json().catch(() => ({}));
           throw new ApiError(
             retryRes.status,
-            retryBody.message || `HTTP ${retryRes.status}`
+            humanizeQueryError(retryBody.message || `HTTP ${retryRes.status}`)
           );
         }
         if (retryRes.status === 204) {
@@ -99,7 +100,7 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
       const errorBody = await res.json().catch(() => ({}));
       throw new ApiError(
         res.status,
-        errorBody.message || `HTTP ${res.status}`
+        humanizeQueryError(errorBody.message || `HTTP ${res.status}`)
       );
     }
 
