@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
+import { projectSchema } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
 import {
   handleCommandError,
@@ -11,9 +12,10 @@ import {
 export async function handleDbSchemas(
   dbId: number,
   opts: DbCommandOptions,
-): Promise<string[]> {
+): Promise<any[]> {
   const client = createApiClient(opts);
-  return client.get(`/api/database/${dbId}/schemas`);
+  const schemas = await client.get(`/api/database/${dbId}/schemas`);
+  return schemas.map(projectSchema);
 }
 
 export function registerDbSchemasCommand(parent: Command): void {
@@ -24,10 +26,7 @@ export function registerDbSchemasCommand(parent: Command): void {
       const opts = cmd.optsWithGlobals() as DbCommandOptions;
       try {
         const schemas = await handleDbSchemas(parseRequiredId(dbId, "Database ID"), opts);
-        output(
-          schemas.map((schema) => ({ schema })),
-          resolveOutputOptions(opts),
-        );
+        output(schemas, resolveOutputOptions(opts));
       } catch (error) {
         handleCommandError(error);
       }

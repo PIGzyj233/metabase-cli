@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
+import { projectCollectionItem } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
 import { resolveFormat } from "../../lib/config.js";
 import type { GlobalOptions } from "../../types/index.js";
@@ -10,7 +11,7 @@ export async function handleCollectionView(
 ): Promise<any[]> {
   const client = createApiClient(opts);
   const res = await client.get(`/api/collection/${collectionId}/items`);
-  return res.data || res;
+  return (res.data || res).map(projectCollectionItem);
 }
 
 export function registerCollectionViewCommand(parent: Command): void {
@@ -22,12 +23,7 @@ export function registerCollectionViewCommand(parent: Command): void {
       const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const items = await handleCollectionView(collectionId, opts);
-        const simplified = items.map((i: any) => ({
-          id: i.id,
-          name: i.name,
-          model: i.model,
-        }));
-        output(simplified, {
+        output(items, {
           format: resolveFormat(opts),
           json: opts.json,
           jq: opts.jq,

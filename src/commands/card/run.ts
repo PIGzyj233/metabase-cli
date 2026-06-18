@@ -1,19 +1,15 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
-import { formatQueryResult, output } from "../../lib/formatter.js";
+import { output } from "../../lib/formatter.js";
+import { unpackDatasetResult, type DatasetResult } from "../../lib/dataset-result.js";
 import { resolveFormat } from "../../lib/config.js";
-import type { GlobalOptions, PaginationInfo } from "../../types/index.js";
+import type { GlobalOptions } from "../../types/index.js";
 
 interface CardRunOptions extends GlobalOptions {
   params?: string;
   templateTags?: string;
   limit?: number;
   offset?: number;
-}
-
-interface CardRunResult {
-  data: Record<string, any>[];
-  pagination: PaginationInfo;
 }
 
 async function resolveParameters(
@@ -87,7 +83,7 @@ async function resolveTemplateTags(
 export async function handleCardRun(
   cardId: string | number,
   opts: CardRunOptions
-): Promise<CardRunResult> {
+): Promise<DatasetResult> {
   const client = createApiClient(opts);
 
   let body: any = { ignore_cache: false };
@@ -99,22 +95,11 @@ export async function handleCardRun(
 
   const res = await client.post(`/api/card/${cardId}/query`, body);
 
-  if (res.status === "failed" || res.error) {
-    throw new Error(res.error || "Card query execution failed");
-  }
-
-  const rows = res.data?.rows || [];
-  const cols = res.data?.cols || [];
-  const allData = formatQueryResult(rows, cols);
-
-  const limit = opts.limit ?? 100;
-  const offset = opts.offset ?? 0;
-  const paginatedData = allData.slice(offset, offset + limit);
-
-  return {
-    data: paginatedData,
-    pagination: { total: allData.length, offset, limit },
-  };
+  return unpackDatasetResult(res, {
+    limit: opts.limit,
+    offset: opts.offset,
+    failureMessage: "Card query execution failed",
+  });
 }
 
 export function registerCardRunCommand(parent: Command): void {

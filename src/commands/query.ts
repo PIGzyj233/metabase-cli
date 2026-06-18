@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { createApiClient } from "../lib/api-client.js";
-import { formatQueryResult, output } from "../lib/formatter.js";
+import { output } from "../lib/formatter.js";
+import { unpackDatasetResult, type DatasetResult } from "../lib/dataset-result.js";
 import { resolveDefaultDb, resolveFormat } from "../lib/config.js";
-import type { GlobalOptions, PaginationInfo } from "../types/index.js";
+import type { GlobalOptions } from "../types/index.js";
 
 interface QueryOptions extends GlobalOptions {
   db?: number;
@@ -10,15 +11,10 @@ interface QueryOptions extends GlobalOptions {
   offset?: number;
 }
 
-interface QueryHandleResult {
-  data: Record<string, any>[];
-  pagination: PaginationInfo;
-}
-
 export async function handleQuery(
   sql: string,
   opts: QueryOptions
-): Promise<QueryHandleResult> {
+): Promise<DatasetResult> {
   const dbId = opts.db || resolveDefaultDb(opts);
   if (!dbId) {
     throw new Error("Database ID required. Use --db <id> or set MB_DEFAULT_DB.");
@@ -31,27 +27,11 @@ export async function handleQuery(
     native: { query: sql },
   });
 
-  if (res.status === "failed" || res.error) {
-    throw new Error(res.error || res.json_query?.error || "Query execution failed");
-  }
-
-  const rows = res.data?.rows || [];
-  const cols = res.data?.cols || [];
-  const allData = formatQueryResult(rows, cols);
-
-  // Client-side pagination
-  const limit = opts.limit ?? 100;
-  const offset = opts.offset ?? 0;
-  const paginatedData = allData.slice(offset, offset + limit);
-
-  return {
-    data: paginatedData,
-    pagination: {
-      total: allData.length,
-      offset,
-      limit,
-    },
-  };
+  return unpackDatasetResult(res, {
+    limit: opts.limit,
+    offset: opts.offset,
+    failureMessage: "Query execution failed",
+  });
 }
 
 export function registerQueryCommand(program: Command): void {

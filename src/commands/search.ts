@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../lib/api-client.js";
+import { projectSearchResult } from "../lib/agent-projections.js";
 import { output } from "../lib/formatter.js";
 import { resolveFormat } from "../lib/config.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -21,7 +22,7 @@ export async function handleSearch(
     results = results.filter((r: any) => r.model === opts.type);
   }
 
-  return results;
+  return results.map(projectSearchResult);
 }
 
 export function registerSearchCommand(program: Command): void {
@@ -34,13 +35,7 @@ export function registerSearchCommand(program: Command): void {
       const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const results = await handleSearch(query, opts);
-        const simplified = results.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          model: r.model,
-          collection_id: r.collection_id,
-        }));
-        output(simplified, {
+        output(results, {
           format: resolveFormat(opts),
           json: opts.json,
           jq: opts.jq,

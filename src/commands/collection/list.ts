@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
+import { projectCollectionSummary } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
 import { resolveFormat } from "../../lib/config.js";
 import type { GlobalOptions } from "../../types/index.js";
@@ -13,9 +14,9 @@ export async function handleCollectionList(
   if (opts.parent) {
     return collections.filter(
       (c: any) => c.location === `/${opts.parent}/` || c.parent_id === opts.parent
-    );
+    ).map(projectCollectionSummary);
   }
-  return collections;
+  return collections.map(projectCollectionSummary);
 }
 
 export function registerCollectionListCommand(parent: Command): void {
@@ -28,12 +29,7 @@ export function registerCollectionListCommand(parent: Command): void {
       const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const collections = await handleCollectionList(opts);
-        const simplified = collections.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          location: c.location,
-        }));
-        output(simplified, {
+        output(collections, {
           format: resolveFormat(opts),
           json: opts.json,
           jq: opts.jq,

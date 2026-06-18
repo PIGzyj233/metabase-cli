@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
+import { projectCardSummary } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
 import { resolveFormat } from "../../lib/config.js";
 import type { GlobalOptions } from "../../types/index.js";
@@ -15,10 +16,11 @@ export async function handleCardList(
       `/api/collection/${opts.collection}/items`,
       { models: "card" }
     );
-    return res.data || res;
+    return (res.data || res).map(projectCardSummary);
   }
 
-  return client.get("/api/card");
+  const cards = await client.get("/api/card");
+  return cards.map(projectCardSummary);
 }
 
 export function registerCardListCommand(parent: Command): void {
@@ -31,12 +33,7 @@ export function registerCardListCommand(parent: Command): void {
       const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const cards = await handleCardList(opts);
-        const simplified = cards.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          collection_id: c.collection_id,
-        }));
-        output(simplified, {
+        output(cards, {
           format: resolveFormat(opts),
           json: opts.json,
           jq: opts.jq,

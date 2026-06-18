@@ -30,15 +30,22 @@ describe("search command", () => {
       status: 200,
       body: {
         data: [
-          { id: 1, name: "Monthly Revenue", model: "card" },
+          { id: 1, name: "Monthly Revenue", model: "card", collection_id: 5 },
           { id: 5, name: "Revenue Dashboard", model: "dashboard" },
         ],
       },
     }]);
     const { handleSearch } = await import("../../src/commands/search.js");
     const result = await handleSearch("revenue", {});
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe("Monthly Revenue");
+    expect(result).toEqual([
+      { id: 1, name: "Monthly Revenue", model: "card", collection_id: 5 },
+      {
+        id: 5,
+        name: "Revenue Dashboard",
+        model: "dashboard",
+        collection_id: undefined,
+      },
+    ]);
     const calls = getFetchCalls();
     expect(calls[0].url).toContain("q=revenue");
   });

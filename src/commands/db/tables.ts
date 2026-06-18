@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
+import { projectTable } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
 import {
   handleCommandError,
@@ -18,11 +19,12 @@ export async function handleDbTables(
     const response = await client.get(
       `/api/database/${dbId}/schema/${encodeURIComponent(opts.schema)}`,
     );
-    return Array.isArray(response) ? response : response.tables || [];
+    const tables = Array.isArray(response) ? response : response.tables || [];
+    return tables.map(projectTable);
   }
 
   const metadata = await client.get(`/api/database/${dbId}/metadata`);
-  return metadata.tables || [];
+  return (metadata.tables || []).map(projectTable);
 }
 
 export function registerDbTablesCommand(parent: Command): void {
@@ -34,12 +36,7 @@ export function registerDbTablesCommand(parent: Command): void {
       const opts = cmd.optsWithGlobals() as DbTablesOptions;
       try {
         const tables = await handleDbTables(parseRequiredId(dbId, "Database ID"), opts);
-        const simplified = tables.map((table: any) => ({
-          id: table.id,
-          name: table.name,
-          schema: table.schema,
-        }));
-        output(simplified, resolveOutputOptions(opts));
+        output(tables, resolveOutputOptions(opts));
       } catch (error) {
         handleCommandError(error);
       }

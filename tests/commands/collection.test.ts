@@ -30,16 +30,18 @@ describe("collection commands", () => {
       mockFetch([{
         status: 200,
         body: [
-          { id: 1, name: "Our analytics", location: "/" },
-          { id: 2, name: "Marketing", location: "/" },
+          { id: 1, name: "Our analytics", location: "/", parent_id: null },
+          { id: 2, name: "Marketing", location: "/", parent_id: null },
         ],
       }]);
       const { handleCollectionList } = await import(
         "../../src/commands/collection/list.js"
       );
       const result = await handleCollectionList({});
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe("Our analytics");
+      expect(result).toEqual([
+        { id: 1, name: "Our analytics", location: "/" },
+        { id: 2, name: "Marketing", location: "/" },
+      ]);
     });
 
     it("filters by parent collection", async () => {
@@ -55,7 +57,10 @@ describe("collection commands", () => {
         "../../src/commands/collection/list.js"
       );
       const result = await handleCollectionList({ parent: 1 });
-      expect(result).toHaveLength(2);
+      expect(result).toEqual([
+        { id: 3, name: "Sub Collection", location: "/1/" },
+        { id: 4, name: "Another Sub", location: "/1/" },
+      ]);
     });
   });
 
@@ -74,8 +79,10 @@ describe("collection commands", () => {
         "../../src/commands/collection/view.js"
       );
       const result = await handleCollectionView(1, {});
-      expect(result).toHaveLength(2);
-      expect(result[0].model).toBe("card");
+      expect(result).toEqual([
+        { id: 1, name: "Revenue Report", model: "card" },
+        { id: 3, name: "Sub Collection", model: "collection" },
+      ]);
     });
 
     it("returns empty array for empty collection", async () => {

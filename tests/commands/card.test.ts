@@ -30,14 +30,26 @@ describe("card commands", () => {
       mockFetch([{
         status: 200,
         body: [
-          { id: 1, name: "Revenue Report", collection_id: 5 },
-          { id: 2, name: "User Growth", collection_id: 5 },
+          {
+            id: 1,
+            name: "Revenue Report",
+            collection_id: 5,
+            description: "Ignored",
+          },
+          {
+            id: 2,
+            name: "User Growth",
+            collection_id: 5,
+            description: "Ignored",
+          },
         ],
       }]);
       const { handleCardList } = await import("../../src/commands/card/list.js");
       const result = await handleCardList({});
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe("Revenue Report");
+      expect(result).toEqual([
+        { id: 1, name: "Revenue Report", collection_id: 5 },
+        { id: 2, name: "User Growth", collection_id: 5 },
+      ]);
     });
 
     it("lists cards in specific collection", async () => {
@@ -51,7 +63,9 @@ describe("card commands", () => {
       }]);
       const { handleCardList } = await import("../../src/commands/card/list.js");
       const result = await handleCardList({ collection: 5 });
-      expect(result).toHaveLength(1);
+      expect(result).toEqual([
+        { id: 1, name: "Revenue Report", collection_id: undefined },
+      ]);
     });
   });
 
@@ -71,9 +85,21 @@ describe("card commands", () => {
       }]);
       const { handleCardView } = await import("../../src/commands/card/view.js");
       const result = await handleCardView(42, {});
-      expect(result.name).toBe("Revenue Report");
-      expect(result.parameters).toHaveLength(1);
-      expect(result.parameters[0].slug).toBe("start_date");
+      expect(result).toEqual({
+        id: 42,
+        name: "Revenue Report",
+        description: "Monthly revenue",
+        query_type: "native",
+        query: "SELECT sum(amount) FROM orders",
+        parameters: [
+          {
+            slug: "start_date",
+            name: "Start Date",
+            type: "date/single",
+          },
+        ],
+        template_tags: [],
+      });
     });
   });
 

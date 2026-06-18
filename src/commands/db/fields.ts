@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
+import { projectField } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
 import {
   handleCommandError,
@@ -14,12 +15,7 @@ export async function handleDbFields(
 ): Promise<any[]> {
   const client = createApiClient(opts);
   const metadata = await client.get(`/api/table/${tableId}/query_metadata`);
-  return (metadata.fields || []).map((field: any) => ({
-    id: field.id,
-    name: field.name,
-    database_type: field.database_type,
-    description: field.description || null,
-  }));
+  return (metadata.fields || []).map(projectField);
 }
 
 export function registerDbFieldsCommand(parent: Command): void {

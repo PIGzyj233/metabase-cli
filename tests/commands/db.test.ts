@@ -36,8 +36,8 @@ describe("db commands", () => {
           status: 200,
           body: {
             data: [
-              { id: 1, name: "Production", engine: "postgres" },
-              { id: 2, name: "Analytics", engine: "bigquery" },
+              { id: 1, name: "Production", engine: "postgres", details: {} },
+              { id: 2, name: "Analytics", engine: "bigquery", details: {} },
             ],
           },
         },
@@ -67,7 +67,11 @@ describe("db commands", () => {
       );
       const result = await handleDbSchemas(1, {});
 
-      expect(result).toEqual(["public", "analytics", "raw"]);
+      expect(result).toEqual([
+        { schema: "public" },
+        { schema: "analytics" },
+        { schema: "raw" },
+      ]);
       expect(getFetchCalls()[0]?.url).toBe(
         "https://metabase.test.com/api/database/1/schemas"
       );
@@ -81,8 +85,8 @@ describe("db commands", () => {
           status: 200,
           body: {
             tables: [
-              { id: 10, name: "users", schema: "public" },
-              { id: 11, name: "orders", schema: "public" },
+              { id: 10, name: "users", schema: "public", fields: [] },
+              { id: 11, name: "orders", schema: "public", fields: [] },
             ],
           },
         },
@@ -91,12 +95,10 @@ describe("db commands", () => {
       const { handleDbTables } = await import("../../src/commands/db/tables.js");
       const result = await handleDbTables(1, {});
 
-      expect(result).toHaveLength(2);
-      expect(result[0]).toMatchObject({
-        id: 10,
-        name: "users",
-        schema: "public",
-      });
+      expect(result).toEqual([
+        { id: 10, name: "users", schema: "public" },
+        { id: 11, name: "orders", schema: "public" },
+      ]);
     });
 
     it("returns tables for a specific schema and URL-encodes the schema name", async () => {
@@ -104,8 +106,8 @@ describe("db commands", () => {
         {
           status: 200,
           body: [
-            { id: 10, name: "users", schema: "analytics raw" },
-            { id: 11, name: "orders", schema: "analytics raw" },
+            { id: 10, name: "users", schema: "analytics raw", fields: [] },
+            { id: 11, name: "orders", schema: "analytics raw", fields: [] },
           ],
         },
       ]);
@@ -113,7 +115,10 @@ describe("db commands", () => {
       const { handleDbTables } = await import("../../src/commands/db/tables.js");
       const result = await handleDbTables(1, { schema: "analytics raw" });
 
-      expect(result).toHaveLength(2);
+      expect(result).toEqual([
+        { id: 10, name: "users", schema: "analytics raw" },
+        { id: 11, name: "orders", schema: "analytics raw" },
+      ]);
       expect(getFetchCalls()[0]?.url).toBe(
         "https://metabase.test.com/api/database/1/schema/analytics%20raw"
       );
