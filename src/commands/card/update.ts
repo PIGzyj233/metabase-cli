@@ -162,7 +162,7 @@ export function registerCardUpdateCommand(parent: Command): void {
         const updatedCard = await handleCardUpdate(cardId, opts);
         output([updatedCard], resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

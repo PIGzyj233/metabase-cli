@@ -1,11 +1,10 @@
 import {
-  resolveToken,
   getAuthHeader,
   loginWithPassword,
   storeToken,
+  resolveProfile,
   type TokenInfo,
 } from "./auth.js";
-import { resolveHostUrl, resolveHost } from "./config.js";
 import { humanizeQueryError } from "./error-message.js";
 import type { GlobalOptions } from "../types/index.js";
 
@@ -27,11 +26,12 @@ export interface ApiClient {
 }
 
 export function createApiClient(opts: GlobalOptions): ApiClient {
-  const resolvedUrl = resolveHostUrl(opts);
-  if (!resolvedUrl) {
+  const identity = resolveProfile(opts);
+  if (!identity) {
     throw new ApiError(0, "No Metabase host configured. Set MB_HOST or run 'mb auth login'.");
   }
-  const baseUrl: string = resolvedUrl;
+  const resolvedIdentity = identity;
+  const baseUrl: string = resolvedIdentity.baseUrl;
 
   async function request(
     method: string,
@@ -39,14 +39,11 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
     body?: any,
     isRetry = false
   ): Promise<any> {
-    const tokenInfo = resolveToken(opts);
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
 
-    if (tokenInfo) {
-      Object.assign(headers, getAuthHeader(tokenInfo));
-    }
+    Object.assign(headers, getAuthHeader(resolvedIdentity.tokenInfo));
 
     const url = `${baseUrl}${path}`;
 
@@ -62,10 +59,9 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
       const password = process.env.MB_PASSWORD ?? "";
       if (username && password) {
         const newToken = await loginWithPassword(baseUrl, username, password);
-        const host = resolveHost(opts);
-        if (host) {
+        if (resolvedIdentity.kind === "profile") {
           const protocol = new URL(baseUrl).protocol.replace(":", "");
-          storeToken(host, protocol, newToken, "session", username);
+          storeToken(resolvedIdentity.hostKey, protocol, newToken, "session", username);
         }
         // Retry with new token
         const retryTokenInfo: TokenInfo = { token: newToken, type: "session" };

@@ -20,7 +20,7 @@ export function registerDbListCommand(parent: Command): void {
         const data = await handleDbList(opts);
         output(data, resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

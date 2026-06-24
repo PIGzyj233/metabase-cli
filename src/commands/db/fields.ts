@@ -28,7 +28,7 @@ export function registerDbFieldsCommand(parent: Command): void {
         const fields = await handleDbFields(parseRequiredId(tableId, "Table ID"), opts);
         output(fields, resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

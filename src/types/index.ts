@@ -6,14 +6,26 @@ export interface HostConfig {
   default_db?: number;
 }
 
+export interface ProfileConfig {
+  instance: string;
+  token: string;
+  token_type: "api_key" | "session";
+  username?: string;
+  default_db?: number;
+}
+
 export interface Config {
-  current_host?: string;
+  version?: 2;
+  current_profile?: string | null;
+  profiles?: Record<string, ProfileConfig>;
+  current_host?: string | null;
   hosts: Record<string, HostConfig>;
 }
 
 export interface GlobalOptions {
   host?: string;
   token?: string;
+  profile?: string;
   format?: "json" | "csv" | "table";
   json?: string;
   jq?: string;

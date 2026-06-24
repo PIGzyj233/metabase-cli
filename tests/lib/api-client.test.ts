@@ -141,11 +141,26 @@ describe("api-client", () => {
   });
 
   it("preserves host subpath after 401 renewal stores a new session", async () => {
-    vi.stubEnv("MB_HOST", "https://metabase.test.com/root");
+    vi.stubEnv("MB_HOST", "");
     vi.stubEnv("MB_TOKEN", "");
-    vi.stubEnv("MB_SESSION_TOKEN", "expired_token");
+    vi.stubEnv("MB_SESSION_TOKEN", "");
     vi.stubEnv("MB_USERNAME", "admin@test.com");
     vi.stubEnv("MB_PASSWORD", "secret");
+    const configDir = join(testHome, ".config", "mb");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(
+      join(configDir, "config.yml"),
+      `version: 2
+current_profile: root-profile
+profiles:
+  root-profile:
+    instance: https://metabase.test.com/root
+    token: expired_token
+    token_type: session
+hosts: {}
+current_host: null
+`
+    );
     mockFetch([
       { status: 401, body: { message: "Unauthenticated" } },
       { status: 200, body: { id: "new_session_token" } },

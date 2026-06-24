@@ -38,7 +38,7 @@ export function registerDbTablesCommand(parent: Command): void {
         const tables = await handleDbTables(parseRequiredId(dbId, "Database ID"), opts);
         output(tables, resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

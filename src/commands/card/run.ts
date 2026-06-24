@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import { unpackDatasetResult, type DatasetResult } from "../../lib/dataset-result.js";
-import { resolveFormat } from "../../lib/config.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
+import { handleCommandError } from "../../lib/errors.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 interface CardRunOptions extends GlobalOptions {
@@ -112,19 +113,13 @@ export function registerCardRunCommand(parent: Command): void {
     .option("--offset <n>", "Row offset", (v) => parseInt(v), 0)
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals();
-      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const result = await handleCardRun(cardId, opts);
-        output(result.data, {
-          format: resolveFormat(opts),
-          json: opts.json,
-          jq: opts.jq,
-          omitHeader,
+        output(result.data, resolveCommandOutputOptions(opts, {
           pagination: result.pagination,
-        });
+        }));
       } catch (e: any) {
-        process.stderr.write(`Error: ${e.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(e, opts);
       }
     });
 }

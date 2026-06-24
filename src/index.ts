@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { registerAuthLoginCommand } from "./commands/auth/login.js";
+import { registerAuthListCommand } from "./commands/auth/list.js";
 import { registerAuthLogoutCommand } from "./commands/auth/logout.js";
+import { registerAuthRmCommand } from "./commands/auth/rm.js";
 import { registerAuthStatusCommand } from "./commands/auth/status.js";
+import { registerAuthUseCommand } from "./commands/auth/use.js";
 import { registerDbFieldsCommand } from "./commands/db/fields.js";
 import { registerDbListCommand } from "./commands/db/list.js";
 import { registerDbMetadataCommand } from "./commands/db/metadata.js";
@@ -30,6 +33,7 @@ program
 // Global flags — inherited by all subcommands
 program.option("--host <url>", "Override Metabase server URL");
 program.option("--token <value>", "Override authentication token");
+program.option("--profile <alias>", "Select a named Profile for this invocation");
 program.option("--format <type>", "Output format: json, csv, table");
 program.option("--json <fields>", "Select specific fields in JSON output");
 program.option("--jq <expr>", "Filter JSON output with jmespath expression");
@@ -38,8 +42,11 @@ program.option("--no-header", "Omit header row in table/CSV output");
 // Auth commands
 const authCmd = program.command("auth").description("Manage authentication");
 registerAuthLoginCommand(authCmd);
+registerAuthListCommand(authCmd);
 registerAuthLogoutCommand(authCmd);
+registerAuthRmCommand(authCmd);
 registerAuthStatusCommand(authCmd);
+registerAuthUseCommand(authCmd);
 
 // Database metadata commands
 const dbCmd = program.command("db").description("Database metadata operations");

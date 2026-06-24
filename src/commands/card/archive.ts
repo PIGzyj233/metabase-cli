@@ -22,7 +22,7 @@ export function registerCardArchiveCommand(parent: Command): void {
         const result = await handleCardArchive(cardId, opts);
         process.stderr.write(`Archived card ${result.id}.\n`);
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

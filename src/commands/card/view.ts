@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
 import { projectCardDetail } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
-import { resolveFormat } from "../../lib/config.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
+import { handleCommandError } from "../../lib/errors.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export async function handleCardView(cardId: string | number, opts: GlobalOptions): Promise<any> {
@@ -17,18 +18,11 @@ export function registerCardViewCommand(parent: Command): void {
     .description("View card definition, query, and parameters")
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals();
-      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const card = await handleCardView(cardId, opts);
-        output([card], {
-          format: resolveFormat(opts),
-          json: opts.json,
-          jq: opts.jq,
-          omitHeader,
-        });
+        output([card], resolveCommandOutputOptions(opts));
       } catch (e: any) {
-        process.stderr.write(`Error: ${e.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(e, opts);
       }
     });
 }

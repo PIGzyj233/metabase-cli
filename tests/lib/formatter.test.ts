@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   formatJson,
   formatCsv,
@@ -7,6 +7,8 @@ import {
   applyJmesPath,
   formatPaginationInfo,
   formatQueryResult,
+  output,
+  withSourceAttribution,
 } from "../../src/lib/formatter.js";
 
 const sampleRows = [
@@ -35,6 +37,48 @@ describe("formatter", () => {
       const data = [{ id: 1, name: "Alice" }];
       const output = formatJson(data);
       expect(JSON.parse(output)).toEqual(data);
+    });
+  });
+
+  describe("output source context", () => {
+    it("injects _source into JSON records and emits a Source line", () => {
+      const stdout = vi
+        .spyOn(process.stdout, "write")
+        .mockImplementation(() => true);
+      const stderr = vi
+        .spyOn(process.stderr, "write")
+        .mockImplementation(() => true);
+
+      output([{ id: 1 }], {
+        format: "json",
+        sourceId: "customer-a",
+        sourceUrl: "https://mb.customer-a.test",
+      });
+
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual([
+        { id: 1, _source: "customer-a" },
+      ]);
+      expect(String(stderr.mock.calls[0][0])).toContain(
+        "// Source: customer-a (https://mb.customer-a.test)"
+      );
+    });
+  });
+
+  describe("withSourceAttribution", () => {
+    it("adds a non-empty _source without overwriting existing values", () => {
+      expect(
+        withSourceAttribution(
+          [{ id: 1 }, { id: 2, _source: "preserved" }],
+          "customer-a"
+        )
+      ).toEqual([
+        { id: 1, _source: "customer-a" },
+        { id: 2, _source: "preserved" },
+      ]);
+      expect(withSourceAttribution([], "customer-a")).toEqual([]);
+      expect(() => withSourceAttribution([{ id: 1 }], "")).toThrow(
+        /non-empty/
+      );
     });
   });
 

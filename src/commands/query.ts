@@ -2,7 +2,9 @@ import { Command } from "commander";
 import { createApiClient } from "../lib/api-client.js";
 import { output } from "../lib/formatter.js";
 import { unpackDatasetResult, type DatasetResult } from "../lib/dataset-result.js";
-import { resolveDefaultDb, resolveFormat } from "../lib/config.js";
+import { resolveDefaultDb } from "../lib/config.js";
+import { resolveCommandOutputOptions } from "../lib/output-options.js";
+import { handleCommandError } from "../lib/errors.js";
 import type { GlobalOptions } from "../types/index.js";
 
 interface QueryOptions extends GlobalOptions {
@@ -43,19 +45,13 @@ export function registerQueryCommand(program: Command): void {
     .option("--offset <n>", "Row offset for pagination", (v) => parseInt(v), 0)
     .action(async function (this: Command, sql: string) {
       const opts = this.optsWithGlobals();
-      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const result = await handleQuery(sql, opts);
-        output(result.data, {
-          format: resolveFormat(opts),
-          json: opts.json,
-          jq: opts.jq,
-          omitHeader,
+        output(result.data, resolveCommandOutputOptions(opts, {
           pagination: result.pagination,
-        });
+        }));
       } catch (e: any) {
-        process.stderr.write(`Error: ${e.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(e, opts);
       }
     });
 }

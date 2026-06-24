@@ -1,9 +1,10 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
-import { formatJson } from "../../lib/formatter.js";
+import { output } from "../../lib/formatter.js";
 import {
   handleCommandError,
   parseRequiredId,
+  resolveOutputOptions,
   type DbCommandOptions,
 } from "./common.js";
 
@@ -23,9 +24,9 @@ export function registerDbMetadataCommand(parent: Command): void {
       const opts = cmd.optsWithGlobals() as DbCommandOptions;
       try {
         const metadata = await handleDbMetadata(parseRequiredId(dbId, "Database ID"), opts);
-        process.stdout.write(formatJson(metadata) + "\n");
+        output([metadata], resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

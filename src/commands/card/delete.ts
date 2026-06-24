@@ -40,7 +40,7 @@ export function registerCardDeleteCommand(parent: Command): void {
           process.stderr.write(`Deleted card ${result.id} permanently.\n`);
         }
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

@@ -1,4 +1,5 @@
 import type { GlobalOptions } from "../../types/index.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
 export { handleCommandError } from "../../lib/errors.js";
 
 export interface DbCommandOptions extends GlobalOptions {
@@ -17,10 +18,5 @@ export function parseRequiredId(raw: string, label: string): number {
 }
 
 export function resolveOutputOptions(opts: DbCommandOptions) {
-  return {
-    format: opts.format,
-    json: opts.json,
-    jq: opts.jq,
-    omitHeader: opts.omitHeader ?? opts.header === false,
-  };
+  return resolveCommandOutputOptions(opts);
 }

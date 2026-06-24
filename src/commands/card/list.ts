@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
 import { projectCardSummary } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
-import { resolveFormat } from "../../lib/config.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
+import { handleCommandError } from "../../lib/errors.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export async function handleCardList(
@@ -30,18 +31,11 @@ export function registerCardListCommand(parent: Command): void {
     .option("--collection <id>", "Filter by collection")
     .action(async function (this: Command) {
       const opts = this.optsWithGlobals();
-      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const cards = await handleCardList(opts);
-        output(cards, {
-          format: resolveFormat(opts),
-          json: opts.json,
-          jq: opts.jq,
-          omitHeader,
-        });
+        output(cards, resolveCommandOutputOptions(opts));
       } catch (e: any) {
-        process.stderr.write(`Error: ${e.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(e, opts);
       }
     });
 }

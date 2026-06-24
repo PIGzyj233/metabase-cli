@@ -20,6 +20,19 @@ export function formatJson(data: any): string {
   return JSON.stringify(data, null, 2);
 }
 
+export function withSourceAttribution(
+  data: Record<string, any>[],
+  sourceId: string
+): Record<string, any>[] {
+  if (sourceId.trim() === "") {
+    throw new Error("Source attribution requires a non-empty source id.");
+  }
+  return data.map((row) => ({
+    _source: sourceId,
+    ...row,
+  }));
+}
+
 export function applyJsonFieldSelection(
   data: Record<string, any>[],
   fields: string
@@ -88,9 +101,15 @@ export function output(
     jq?: string;
     omitHeader?: boolean;
     pagination?: PaginationInfo;
+    sourceId?: string;
+    sourceUrl?: string;
   }
 ): void {
   let processed: any = data;
+
+  if (opts.sourceId && Array.isArray(processed)) {
+    processed = withSourceAttribution(processed, opts.sourceId);
+  }
 
   // Apply --json field selection
   if (opts.json && Array.isArray(processed)) {
@@ -114,8 +133,12 @@ export function output(
       case "json":
       default:
         process.stdout.write(formatJson(processed) + "\n");
-        break;
+      break;
     }
+  }
+
+  if (opts.sourceId && opts.sourceUrl) {
+    process.stderr.write(`// Source: ${opts.sourceId} (${opts.sourceUrl})\n`);
   }
 
   // Pagination to stderr

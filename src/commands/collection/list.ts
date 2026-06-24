@@ -2,7 +2,8 @@ import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
 import { projectCollectionSummary } from "../../lib/agent-projections.js";
 import { output } from "../../lib/formatter.js";
-import { resolveFormat } from "../../lib/config.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
+import { handleCommandError } from "../../lib/errors.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export async function handleCollectionList(
@@ -26,18 +27,11 @@ export function registerCollectionListCommand(parent: Command): void {
     .option("--parent <id>", "Filter by parent collection", (v) => parseInt(v))
     .action(async function (this: Command) {
       const opts = this.optsWithGlobals();
-      const omitHeader = opts.omitHeader ?? opts.header === false;
       try {
         const collections = await handleCollectionList(opts);
-        output(collections, {
-          format: resolveFormat(opts),
-          json: opts.json,
-          jq: opts.jq,
-          omitHeader,
-        });
+        output(collections, resolveCommandOutputOptions(opts));
       } catch (e: any) {
-        process.stderr.write(`Error: ${e.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(e, opts);
       }
     });
 }

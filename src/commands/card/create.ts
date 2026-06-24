@@ -108,7 +108,7 @@ export function registerCardCreateCommand(parent: Command): void {
         const createdCard = await handleCardCreate(opts);
         output([createdCard], resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

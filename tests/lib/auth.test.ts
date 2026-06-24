@@ -25,6 +25,79 @@ describe("auth", () => {
   });
 
   describe("resolveToken", () => {
+    it("resolves an explicitly selected Profile as one identity", async () => {
+      const configDir = join(testHome, ".config", "mb");
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, "config.yml"),
+        `version: 2
+current_profile: prod
+profiles:
+  prod:
+    instance: https://prod.example.com
+    token: mb_prod
+    token_type: api_key
+    default_db: 1
+  staging:
+    instance: https://staging.example.com/root
+    token: session_staging
+    token_type: session
+    username: admin@example.com
+    default_db: 9
+hosts: {}
+current_host: null
+`
+      );
+
+      const { resolveProfile } = await import("../../src/lib/auth.js");
+      const result = resolveProfile({ profile: "staging" });
+
+      expect(result).toMatchObject({
+        kind: "profile",
+        sourceId: "staging",
+        baseUrl: "https://staging.example.com/root",
+        hostKey: "staging.example.com/root",
+        tokenInfo: { token: "session_staging", type: "session" },
+        username: "admin@example.com",
+        defaultDb: 9,
+      });
+    });
+
+    it("rejects Profile selection combined with bare override inputs", async () => {
+      vi.stubEnv("MB_HOST", "https://env.example.com");
+      const { resolveProfile } = await import("../../src/lib/auth.js");
+
+      expect(() => resolveProfile({ profile: "prod", token: "mb_cli" }))
+        .toThrow(/Profile selection.*--token.*MB_HOST/);
+    });
+
+    it("lists known aliases when a selected Profile does not exist", async () => {
+      const configDir = join(testHome, ".config", "mb");
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, "config.yml"),
+        `version: 2
+current_profile: prod
+profiles:
+  prod:
+    instance: https://prod.example.com
+    token: mb_prod
+    token_type: api_key
+  staging:
+    instance: https://staging.example.com
+    token: mb_staging
+    token_type: api_key
+hosts: {}
+current_host: null
+`
+      );
+      const { resolveProfile } = await import("../../src/lib/auth.js");
+
+      expect(() => resolveProfile({ profile: "missing" })).toThrow(
+        /Unknown Profile 'missing'.*prod, staging/
+      );
+    });
+
     it("returns CLI --token with highest priority", async () => {
       vi.stubEnv("MB_TOKEN", "mb_env_token");
       const { resolveToken } = await import("../../src/lib/auth.js");

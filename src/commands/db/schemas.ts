@@ -28,7 +28,7 @@ export function registerDbSchemasCommand(parent: Command): void {
         const schemas = await handleDbSchemas(parseRequiredId(dbId, "Database ID"), opts);
         output(schemas, resolveOutputOptions(opts));
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts);
       }
     });
 }

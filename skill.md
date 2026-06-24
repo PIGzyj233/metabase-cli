@@ -50,31 +50,41 @@ rmdir /s /q %USERPROFILE%\.config\mb
 
 ## Prerequisites
 
-Configure authentication before use (pick one):
+Configure authentication by creating one or more **Profiles**. A Profile alias
+names one Metabase instance plus one set of credentials. The Active Profile is
+used when a command does not pass `--profile`.
 
-**Option A — Environment variables:**
-- `MB_HOST` — Metabase server URL (e.g., `https://metabase.example.com`)
-- `MB_TOKEN` — API key (starts with `mb_`), OR
-- `MB_USERNAME` + `MB_PASSWORD` — session-based auth with auto-renewal
-
-**Option B — Interactive login:**
 ```bash
-mb auth login --host https://metabase.example.com --token mb_xxxx
-# or
-mb auth login --host https://metabase.example.com --username user@co.com --password secret
+mb auth login --host https://metabase.example.com --token mb_xxxx --as prod
+mb auth login --host https://staging.example.com --username user@co.com --password secret --as staging
+mb auth list
+mb auth use prod
 ```
 
-Credentials are saved to `~/.config/mb/config.yml`.
+For one-off scripts, use the bare override path without creating a Profile:
+
+```bash
+MB_HOST=https://metabase.example.com MB_TOKEN=mb_xxxx mb db list
+mb db list --host https://metabase.example.com --token mb_xxxx
+```
+
+Profile management commands act on `~/.config/mb/config.yml`, not on
+environment variables. Environment variables decide which identity a single
+command runs as; the config file is the inventory of Profiles you can pick from.
 
 ## Commands
 
 ### Authentication
 | Command | Description |
 |---------|-------------|
-| `mb auth login --host <url> --token <key>` | Login with API key |
-| `mb auth login --host <url> --username <u> --password <p>` | Login with password |
-| `mb auth status` | Show current auth state |
-| `mb auth logout` | Clear credentials |
+| `mb auth login --host <url> --token <key> --as <alias>` | Create an API-key Profile |
+| `mb auth login --host <url> --username <u> --password <p> --as <alias>` | Create a session Profile |
+| `mb auth login --host <url> --token-stdin --as <alias>` | Read token from stdin |
+| `mb auth list` | List Profiles; tokens are never printed |
+| `mb auth use <alias>` | Set the Active Profile offline |
+| `mb auth rm <alias>` | Remove a local Profile; session revoke is best effort |
+| `mb auth status [--profile <alias>]` | Show Active or selected Profile auth state |
+| `mb auth logout [--profile <alias>]` | Revoke server-side session only; keep the Profile |
 
 ### Database Exploration
 | Command | Description |
@@ -109,7 +119,11 @@ Credentials are saved to `~/.config/mb/config.yml`.
 | `mb collection view <id>` | View collection contents |
 
 ### Global Flags
-All commands support: `--format json|csv|table` (default: json), `--json <fields>`, `--jq <jmespath-expr>`, `--no-header`.
+All commands support: `--profile <alias>`, `--format json|csv|table` (default: json), `--json <fields>`, `--jq <jmespath-expr>`, `--no-header`.
+
+`MB_PROFILE=<alias>` is equivalent to `--profile <alias>` for one invocation.
+Do not combine `--profile`/`MB_PROFILE` with `--host`, `--token`, `MB_HOST`, or
+`MB_TOKEN`; a Profile is an atomic identity.
 
 `query` and `card run` also support: `--limit <n>` (default: 100), `--offset <n>` for pagination.
 
@@ -170,5 +184,17 @@ mb card delete 123 --hard-delete
 ## Output
 
 - Default output is JSON (array of objects), ideal for AI parsing
+- Every JSON record carries `_source`: the Profile alias, or the Host key for
+  bare override calls
+- stderr includes `// Source: <alias-or-host-key> (<url>)`
 - Pagination info goes to stderr, e.g.: `// Showing rows 1-100 of 1523`
-- Errors go to stderr with exit code 1
+- Errors go to stderr with exit code 1 and are prefixed with `[source]`
+
+Built-in fan-out across Profiles is intentionally absent. Use a shell loop and
+merge the already-attributed JSON:
+
+```bash
+for p in customer-a customer-b customer-c; do
+  mb query "SELECT * FROM orders LIMIT 10" --db 1 --profile "$p"
+done | jq -s 'add'
+```

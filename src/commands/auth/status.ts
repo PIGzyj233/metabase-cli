@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { resolveToken } from "../../lib/auth.js";
-import { loadConfig, resolveHost } from "../../lib/config.js";
+import { resolveProfile } from "../../lib/auth.js";
 import { output } from "../../lib/formatter.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export interface AuthStatus {
@@ -12,24 +12,16 @@ export interface AuthStatus {
 }
 
 export function getAuthStatus(opts: GlobalOptions = {}): AuthStatus {
-  // Use the full auth priority chain: CLI --token > env vars > config file
-  const tokenInfo = resolveToken(opts);
-  const host = resolveHost(opts);
-
-  if (!tokenInfo) {
+  const identity = resolveProfile(opts);
+  if (!identity) {
     return { loggedIn: false };
   }
 
-  // Resolve username from config if available
-  const config = loadConfig();
-  const configHost = host ? config.hosts[host] : undefined;
-  const username = configHost?.username;
-
   return {
     loggedIn: true,
-    host: host || "(env/cli override)",
-    tokenType: tokenInfo.type,
-    username,
+    host: identity.hostKey,
+    tokenType: identity.tokenInfo.type,
+    username: identity.kind === "profile" ? identity.username : undefined,
   };
 }
 
@@ -40,7 +32,6 @@ export function registerAuthStatusCommand(parent: Command): void {
     .action((localOpts, cmd) => {
       const globalOpts = cmd.optsWithGlobals() as GlobalOptions;
       const status = getAuthStatus(globalOpts);
-      const omitHeader = globalOpts.omitHeader ?? globalOpts.header === false;
 
       if (!status.loggedIn) {
         // Even "not logged in" should be structured for agent consumption
@@ -48,7 +39,7 @@ export function registerAuthStatusCommand(parent: Command): void {
           format: globalOpts.format,
           json: globalOpts.json,
           jq: globalOpts.jq,
-          omitHeader,
+          omitHeader: globalOpts.omitHeader ?? globalOpts.header === false,
         });
         process.stderr.write("Not logged in. Run 'mb auth login' first.\n");
         return;
@@ -63,11 +54,6 @@ export function registerAuthStatusCommand(parent: Command): void {
         record.username = status.username;
       }
 
-      output([record], {
-        format: globalOpts.format,
-        json: globalOpts.json,
-        jq: globalOpts.jq,
-        omitHeader,
-      });
+      output([record], resolveCommandOutputOptions(globalOpts));
     });
 }
