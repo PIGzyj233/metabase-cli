@@ -28,7 +28,7 @@ const program = new Command();
 program
   .name("mb")
   .description("Metabase CLI — query data from the terminal")
-  .version("0.1.1");
+  .version("0.2.1");
 
 // Global flags — inherited by all subcommands
 program.option("--host <url>", "Override Metabase server URL");
