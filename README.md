@@ -15,7 +15,7 @@ npm install -g @pikaskill/metabase-cli
 npx @pikaskill/metabase-cli <command>
 ```
 
-Requires Node.js >= 18.
+Requires Node.js >= 20.
 
 ## Quick Start
 

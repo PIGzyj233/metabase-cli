@@ -9,6 +9,8 @@ Query Metabase databases from the terminal. Designed for AI agent use — JSON o
 
 ## Installation
 
+Requires Node.js >= 20.
+
 ### Global Install (Recommended)
 
 ```bash
