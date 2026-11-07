@@ -1,3 +1,4 @@
+import { parsePositiveInteger } from "../../lib/input-validation.js";
 import type { GlobalOptions } from "../../types/index.js";
 import { resolveCommandOutputOptions } from "../../lib/output-options.js";
 export { handleCommandError } from "../../lib/errors.js";
@@ -11,10 +12,7 @@ export interface DbTablesOptions extends DbCommandOptions {
 }
 
 export function parseRequiredId(raw: string, label: string): number {
-  if (!/^[1-9]\d*$/.test(raw)) {
-    throw new Error(`${label} must be a positive integer.`);
-  }
-  return Number(raw);
+  return parsePositiveInteger(raw, label);
 }
 
 export function resolveOutputOptions(opts: DbCommandOptions) {

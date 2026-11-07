@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { Command } from "commander";
+import { Command, Option } from "commander";
+import { parseJmesPathExpression } from "./lib/input-validation.js";
 import { registerAuthLoginCommand } from "./commands/auth/login.js";
 import { registerAuthListCommand } from "./commands/auth/list.js";
 import { registerAuthLogoutCommand } from "./commands/auth/logout.js";
@@ -34,9 +35,16 @@ program
 program.option("--host <url>", "Override Metabase server URL");
 program.option("--token <value>", "Override authentication token");
 program.option("--profile <alias>", "Select a named Profile for this invocation");
-program.option("--format <type>", "Output format: json, csv, table");
+program.addOption(new Option("--format <type>", "Output format: json, csv, table")
+  .choices(["json", "csv", "table"]).env("MB_FORMAT"));
 program.option("--json <fields>", "Select specific fields in JSON output");
-program.option("--jq <expr>", "Filter JSON output with jmespath expression");
+program.addOption(new Option("--jmespath <expr>", "Filter JSON output with a JMESPath expression")
+  .argParser(parseJmesPathExpression).conflicts("jq"));
+program.option("--jq <expr>", "Legacy alias for --jmespath (uses JMESPath syntax)", parseJmesPathExpression);
+program.hook("preAction", () => {
+  const expression = program.opts().jmespath;
+  if (expression !== undefined) program.setOptionValue("jq", expression);
+});
 program.option("--no-header", "Omit header row in table/CSV output");
 
 // Auth commands

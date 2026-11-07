@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { inheritInvocationProfile } from "../../lib/auth.js";
 import type { GlobalOptions } from "../../types/index.js";
 import { parseRequiredId, handleCommandError } from "../db/common.js";
 import { handleCardUpdate } from "./update.js";
@@ -8,7 +9,7 @@ export async function handleCardArchive(
   opts: GlobalOptions
 ): Promise<{ mode: "archived"; id: number }> {
   const parsedCardId = parseRequiredId(String(cardId), "Card ID");
-  await handleCardUpdate(parsedCardId, { ...opts, archived: true });
+  await handleCardUpdate(parsedCardId, inheritInvocationProfile(opts, { ...opts, archived: true }));
   return { mode: "archived", id: parsedCardId };
 }
 

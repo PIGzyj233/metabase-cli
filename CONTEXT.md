@@ -47,11 +47,15 @@ in order: `--profile <alias>` → `MB_PROFILE` → bare `--host` + `--token`
 _Avoid_: profile lookup, auth resolution
 
 **Source attribution**:
-Every record in stdout JSON output carries a `_source` field. Single mode,
+Every attributed record in stdout JSON output carries a `_source` field. Single mode,
 always on, no flag. For Profile-driven invocations the value is the
 Profile alias; for the bare-override path (no Profile) the value is the
 Host key string. The field is always a non-empty string — never `null`,
 never absent. stderr additionally carries a human-readable
 `// Source: <alias-or-host-key> (<base-url>)` line and prefixes errors
 with `[<alias-or-host-key>] `.
+`--json` field selection retains `_source`; business fields with that name
+receive a collision-free numeric suffix. Explicit JMESPath transformations
+control their own output shape and may omit attribution or return scalars.
+Unauthenticated `auth status` has no resolved source and is an exception.
 _Avoid_: source tag, origin marker

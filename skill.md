@@ -9,6 +9,8 @@ Query Metabase databases from the terminal. Designed for AI agent use — JSON o
 
 ## Installation
 
+Requires Node.js >= 20.
+
 ### Global Install (Recommended)
 
 ```bash
@@ -68,9 +70,17 @@ MB_HOST=https://metabase.example.com MB_TOKEN=mb_xxxx mb db list
 mb db list --host https://metabase.example.com --token mb_xxxx
 ```
 
+Always supply both a host and token for a bare override. Incomplete overrides
+fail without falling back to the Active Profile. For bare SQL queries, also
+supply `--db` or `MB_DEFAULT_DB`; saved Profile defaults do not apply.
+
 Profile management commands act on `~/.config/mb/config.yml`, not on
 environment variables. Environment variables decide which identity a single
 command runs as; the config file is the inventory of Profiles you can pick from.
+
+`auth status` inspects saved credentials locally; it does not verify the token
+with Metabase. It accepts `--profile`/`MB_PROFILE`, ignores bare-override
+environment variables, and rejects explicit `--host`/`--token`.
 
 ## Commands
 
@@ -119,13 +129,21 @@ command runs as; the config file is the inventory of Profiles you can pick from.
 | `mb collection view <id>` | View collection contents |
 
 ### Global Flags
-All commands support: `--profile <alias>`, `--format json|csv|table` (default: json), `--json <fields>`, `--jq <jmespath-expr>`, `--no-header`.
+All commands support: `--profile <alias>`, `--format json|csv|table` (default: json), `--json <fields>`, `--jmespath <expr>`, `--no-header`.
+
+`--jq` remains a legacy alias for `--jmespath`; both use **JMESPath syntax**, such
+as `'[].name'`, not jq's `'.[].name'`. Use only one alias per invocation. Invalid
+expressions fail before a request is sent; transformed results are always JSON.
 
 `MB_PROFILE=<alias>` is equivalent to `--profile <alias>` for one invocation.
 Do not combine `--profile`/`MB_PROFILE` with `--host`, `--token`, `MB_HOST`, or
 `MB_TOKEN`; a Profile is an atomic identity.
 
-`query` and `card run` also support: `--limit <n>` (default: 100), `--offset <n>` for pagination.
+`query` and `card run` also support `--limit <n>` (default: 100) and
+`--offset <n>` (default: 0) for **local output slicing**. Each invocation submits
+the query again and downloads its response before slicing; these flags do not
+limit database execution or resume a stable result snapshot. If Metabase reports
+truncation, omitted rows cannot be recovered by increasing `--offset`.
 
 ## Recommended Workflow
 
@@ -133,7 +151,9 @@ Do not combine `--profile`/`MB_PROFILE` with `--host`, `--token`, `MB_HOST`, or
 2. `mb db tables <db-id>` — see tables in a database
 3. `mb db fields <table-id>` — understand table schema
 4. `mb query "SELECT ..." --db <id>` — run your query
-5. If query returned many rows, use `--offset` to paginate
+5. For large results, narrow the SQL with filters, deterministic ordering, and
+   suitable SQL limits. Use `--offset` only when intentionally rerunning a query
+   to inspect a different local slice; the result may have changed.
 
 Or find existing reports:
 1. `mb search "<keyword>"` — find saved cards/dashboards
@@ -184,8 +204,14 @@ mb card delete 123 --hard-delete
 ## Output
 
 - Default output is JSON (array of objects), ideal for AI parsing
+- Duplicate query column names receive collision-free numeric suffixes:
+  `id, id, id_2` becomes `id, id_3, id_2`. Use explicit SQL aliases when possible.
 - Every JSON record carries `_source`: the Profile alias, or the Host key for
-  bare override calls
+  bare override calls. `--json` retains it. Conflicting business columns are
+  preserved under a free suffix such as `_source_2`.
+- Explicit JMESPath expressions own their output shape and may omit `_source`
+  or return scalars. Include `_source` in projections used to merge sources.
+  An unauthenticated `auth status` has no source to attribute.
 - stderr includes `// Source: <alias-or-host-key> (<url>)`
 - Pagination info goes to stderr, e.g.: `// Showing rows 1-100 of 1523`
 - Errors go to stderr with exit code 1 and are prefixed with `[source]`

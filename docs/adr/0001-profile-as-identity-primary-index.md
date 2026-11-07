@@ -63,3 +63,11 @@ purely from stdout.
 - A new verb set lands under `mb auth`: `login --as <alias>`, `list`, `use
   <alias>`, `rm <alias>`, `status [--profile <alias>]`. `rename` is
   intentionally omitted — `rm` + re-`login --as` covers it.
+
+## Output contract clarification (2026-11-07)
+
+`_source` is reserved for CLI attribution. Conflicting business fields are
+renamed with a collision-free numeric suffix, and `--json` retains attribution.
+The always-on rule applies before explicit JMESPath transformations: those
+expressions may intentionally produce scalars or projections without `_source`.
+An unauthenticated `auth status` has no resolved identity to attribute.

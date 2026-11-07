@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
 import { parse, stringify } from "yaml";
+import { resolveInvocationProfile } from "./auth.js";
+import { parsePositiveInteger } from "./input-validation.js";
 import type { Config, GlobalOptions, HostConfig, ProfileConfig } from "../types/index.js";
 
 export function getConfigDir(): string {
@@ -185,24 +187,12 @@ export function resolveHostUrl(opts: GlobalOptions): string | undefined {
 }
 
 export function resolveDefaultDb(opts: GlobalOptions & { db?: number }): number | undefined {
-  if (opts.db) return opts.db;
+  if (opts.db !== undefined) return parsePositiveInteger(opts.db, "Database ID");
   const envDb = process.env.MB_DEFAULT_DB;
-  if (envDb) return parseInt(envDb, 10);
-  const config = loadConfig();
-  const selectedProfile = getProfileByAlias(
-    config,
-    opts.profile || process.env.MB_PROFILE
-  );
-  if (selectedProfile) {
-    return selectedProfile.default_db;
-  }
-  const activeProfile = getActiveProfile(config);
-  if (activeProfile) {
-    return activeProfile.profile.default_db;
-  }
-  const host = config.current_host;
-  if (host && config.hosts[host]) {
-    return config.hosts[host].default_db;
+  if (envDb) return parsePositiveInteger(envDb, "MB_DEFAULT_DB");
+  const identity = resolveInvocationProfile(opts);
+  if (identity?.kind === "profile" && identity.defaultDb !== undefined) {
+    return parsePositiveInteger(identity.defaultDb, "Profile default_db");
   }
   return undefined;
 }

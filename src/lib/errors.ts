@@ -1,10 +1,10 @@
-import { resolveProfile } from "./auth.js";
+import { resolveInvocationProfile } from "./auth.js";
 import type { GlobalOptions } from "../types/index.js";
 
 function resolveErrorPrefix(opts?: GlobalOptions): string {
   if (!opts) return "";
   try {
-    const identity = resolveProfile(opts);
+    const identity = resolveInvocationProfile(opts);
     return identity ? `[${identity.sourceId}] ` : "";
   } catch {
     return "";

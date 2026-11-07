@@ -15,7 +15,7 @@ npm install -g @pikaskill/metabase-cli
 npx @pikaskill/metabase-cli <command>
 ```
 
-Requires Node.js >= 18.
+Requires Node.js >= 20.
 
 ## Quick Start
 
@@ -69,9 +69,17 @@ MB_HOST=https://metabase.example.com MB_TOKEN=mb_xxxx mb db list
 mb db list --host https://metabase.example.com --token mb_xxxx
 ```
 
+Bare overrides require both a host and token; an incomplete override is an
+error and never falls back to the Active Profile. A bare query also needs
+`--db` or `MB_DEFAULT_DB`; it does not inherit a saved Profile's database ID.
+
 Profile management commands act on `~/.config/mb/config.yml`, not on
 environment variables. Environment variables decide which identity a single
 command runs as; the config file is the inventory of Profiles you can pick from.
+
+`auth status` inspects saved credentials locally, not whether a token is valid on
+the server. It accepts `--profile`/`MB_PROFILE`, ignores bare-override environment
+variables, and rejects explicit `--host`/`--token`.
 
 ## Commands
 
@@ -90,11 +98,15 @@ mb collection list|view         Browse collections
 |------|-------------|
 | `--format json\|csv\|table` | Output format (default: json) |
 | `--json <fields>` | Select specific JSON fields |
-| `--jq <expr>` | JMESPath filter expression |
+| `--jmespath <expr>` | JMESPath filter expression, e.g. `'[].name'` |
+| `--jq <expr>` | Legacy alias for `--jmespath`; uses JMESPath, not jq syntax |
 | `--no-header` | Omit header in table/CSV output |
 | `--host <url>` | Override Metabase URL |
 | `--token <value>` | Override auth token |
 | `--profile <alias>` | Select a Profile for one invocation |
+
+Use only one of `--jmespath` and `--jq`. Expressions are validated before a
+request is sent, and their result is always emitted as JSON.
 
 `MB_PROFILE=<alias>` is equivalent to passing `--profile <alias>` for a single
 command. `--profile`/`MB_PROFILE` cannot be combined with `--host`, `--token`,
@@ -102,9 +114,23 @@ command. `--profile`/`MB_PROFILE` cannot be combined with `--host`, `--token`,
 
 ## Output
 
+`query` and `card run` accept `--limit` (default 100) and `--offset` (default
+0) to slice the rows returned by Metabase **locally**. These flags do not limit
+database execution or network transfer. Each invocation submits the query again;
+changing `--offset` does not resume a stable result snapshot. For large native
+queries, put appropriate filtering, ordering, and limits in your SQL. If Metabase
+reports truncation, stderr warns that omitted rows cannot be recovered with
+`--offset`.
+
 - JSON by default (array of objects) — ideal for AI agent parsing
+- Duplicate query column names get deterministic numeric suffixes without
+  overwriting real column names: `id, id, id_2` becomes `id, id_3, id_2`.
 - Every JSON record includes `_source`: the Profile alias, or the Host key for
-  bare override calls
+  bare override calls. `--json` retains it. A business column named `_source` is
+  preserved under a free suffix such as `_source_2`.
+- Explicit JMESPath expressions control the output shape, including scalars or
+  objects without `_source`. Include `_source` in projections when merging data.
+  An unauthenticated `auth status` has no source to attribute.
 - stderr includes `// Source: <alias-or-host-key> (<url>)`
 - Pagination info goes to stderr: `// Showing rows 1-100 of 1523`
 - Errors go to stderr with exit code 1 and are prefixed with `[source]`

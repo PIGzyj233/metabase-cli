@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { parsePositiveInteger, parseNonNegativeInteger, validatePagination } from "../../lib/input-validation.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import { unpackDatasetResult, type DatasetResult } from "../../lib/dataset-result.js";
@@ -16,9 +17,8 @@ interface CardRunOptions extends GlobalOptions {
 async function resolveParameters(
   client: ReturnType<typeof createApiClient>,
   cardId: string | number,
-  paramsJson: string
+  userParams: Record<string, unknown>
 ): Promise<any[]> {
-  const userParams = JSON.parse(paramsJson);
   const card = await client.get(`/api/card/${cardId}`);
   const cardParams: any[] = card.parameters || [];
 
@@ -47,9 +47,8 @@ async function resolveParameters(
 async function resolveTemplateTags(
   client: ReturnType<typeof createApiClient>,
   cardId: string | number,
-  paramsJson: string
+  userParams: Record<string, unknown>
 ): Promise<any[]> {
-  const userParams = JSON.parse(paramsJson);
   const card = await client.get(`/api/card/${cardId}`);
   const tags: Record<string, any> =
     card.dataset_query?.native?.["template-tags"] || {};
@@ -81,20 +80,41 @@ async function resolveTemplateTags(
   return resolved;
 }
 
+function parseParameterObject(raw: string, flag: string): Record<string, unknown> {
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    throw new Error(`${flag} must contain valid JSON.`);
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${flag} must be a JSON object of parameter names and values.`);
+  }
+  return value as Record<string, unknown>;
+}
+
 export async function handleCardRun(
   cardId: string | number,
   opts: CardRunOptions
 ): Promise<DatasetResult> {
+  const parsedCardId = parsePositiveInteger(cardId, "Card ID");
+  validatePagination(opts);
+  if (opts.params !== undefined && opts.templateTags !== undefined) {
+    throw new Error("--params and --template-tags cannot be combined.");
+  }
+  const params = opts.params === undefined ? undefined : parseParameterObject(opts.params, "--params");
+  const templateTags = opts.templateTags === undefined
+    ? undefined : parseParameterObject(opts.templateTags, "--template-tags");
   const client = createApiClient(opts);
 
   let body: any = { ignore_cache: false };
-  if (opts.params) {
-    body.parameters = await resolveParameters(client, cardId, opts.params);
-  } else if (opts.templateTags) {
-    body.parameters = await resolveTemplateTags(client, cardId, opts.templateTags);
+  if (params) {
+    body.parameters = await resolveParameters(client, parsedCardId, params);
+  } else if (templateTags) {
+    body.parameters = await resolveTemplateTags(client, parsedCardId, templateTags);
   }
 
-  const res = await client.post(`/api/card/${cardId}/query`, body);
+  const res = await client.post(`/api/card/${parsedCardId}/query`, body);
 
   return unpackDatasetResult(res, {
     limit: opts.limit,
@@ -109,8 +129,8 @@ export function registerCardRunCommand(parent: Command): void {
     .description("Execute a saved card/question")
     .option("--params <json>", "Parameters as JSON key-value pairs")
     .option("--template-tags <json>", "Template tag parameters as JSON key-value pairs (for native queries)")
-    .option("--limit <n>", "Max rows (default: 100)", (v) => parseInt(v), 100)
-    .option("--offset <n>", "Row offset", (v) => parseInt(v), 0)
+    .option("--limit <n>", "Max rows to display from the response (local slice)", (v) => parsePositiveInteger(v, "Limit"), 100)
+    .option("--offset <n>", "Rows to skip locally; each invocation submits the query again", (v) => parseNonNegativeInteger(v, "Offset"), 0)
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals();
       try {

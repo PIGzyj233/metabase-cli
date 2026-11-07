@@ -1,4 +1,4 @@
-import { resolveProfile } from "./auth.js";
+import { resolveInvocationProfile } from "./auth.js";
 import { resolveFormat } from "./config.js";
 import type { PaginationInfo } from "../types/index.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -7,7 +7,7 @@ export function resolveCommandOutputOptions(
   opts: GlobalOptions & { header?: boolean },
   extra: { pagination?: PaginationInfo } = {}
 ) {
-  const identity = resolveProfile(opts);
+  const identity = resolveInvocationProfile(opts);
   return {
     format: resolveFormat(opts),
     json: opts.json,

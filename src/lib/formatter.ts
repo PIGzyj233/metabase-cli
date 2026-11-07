@@ -3,17 +3,33 @@ import { stringify } from "csv-stringify/sync";
 import jmespath from "jmespath";
 import type { PaginationInfo } from "../types/index.js";
 
+function uniqueFieldNames(names: string[], reserved: string[] = []): string[] {
+  // Keep original names available for their first occurrence. Generated suffixes
+  // must not steal a later real column name (for example: id, id, id_2).
+  const originalNames = new Set(names);
+  const used = new Set(reserved);
+  return names.map((name) => {
+    let candidate = name;
+    let suffix = 2;
+    while (used.has(candidate)) {
+      do {
+        candidate = `${name}_${suffix++}`;
+      } while (originalNames.has(candidate));
+    }
+    used.add(candidate);
+    return candidate;
+  });
+}
+
 export function formatQueryResult(
   rows: any[][],
   cols: { name: string }[]
 ): Record<string, any>[] {
-  return rows.map((row) => {
-    const obj: Record<string, any> = {};
-    cols.forEach((col, i) => {
-      obj[col.name] = row[i];
-    });
-    return obj;
-  });
+  const names = uniqueFieldNames(cols.map((col) => col.name));
+  // fromEntries defines own properties even for names such as __proto__.
+  return rows.map((row) =>
+    Object.fromEntries(names.map((name, i) => [name, row[i]])),
+  );
 }
 
 export function formatJson(data: any): string {
@@ -27,10 +43,17 @@ export function withSourceAttribution(
   if (sourceId.trim() === "") {
     throw new Error("Source attribution requires a non-empty source id.");
   }
-  return data.map((row) => ({
-    _source: sourceId,
-    ...row,
-  }));
+  const fieldSet = new Set<string>();
+  for (const row of data) {
+    for (const field of Object.keys(row)) fieldSet.add(field);
+  }
+  const fields = [...fieldSet];
+  const attributedNames = uniqueFieldNames(fields, ["_source"]);
+  const names = new Map(fields.map((field, i) => [field, attributedNames[i]]));
+  return data.map((row) => Object.fromEntries([
+    ["_source", sourceId],
+    ...Object.entries(row).map(([field, value]) => [names.get(field)!, value]),
+  ]));
 }
 
 export function applyJsonFieldSelection(
@@ -39,11 +62,12 @@ export function applyJsonFieldSelection(
 ): Record<string, any>[] {
   const fieldList = fields.split(",").map((f) => f.trim());
   return data.map((row) => {
-    const obj: Record<string, any> = {};
-    for (const f of fieldList) {
-      if (f in row) obj[f] = row[f];
-    }
-    return obj;
+    const selected = Object.hasOwn(row, "_source")
+      ? ["_source", ...fieldList.filter((field) => field !== "_source")]
+      : fieldList;
+    return Object.fromEntries(selected
+      .filter((field) => Object.hasOwn(row, field))
+      .map((field) => [field, row[field]]));
   });
 }
 
@@ -77,15 +101,23 @@ export function formatTable(
 }
 
 export function formatPaginationInfo(info: PaginationInfo): string {
-  if (info.total <= info.limit && info.offset === 0) {
+  if (info.total <= info.limit && info.offset === 0 && !info.truncated) {
     return "";
   }
-  const start = info.offset + 1;
+  const start = info.offset < info.total ? info.offset + 1 : 0;
   const end = Math.min(info.offset + info.limit, info.total);
   const nextOffset = info.offset + info.limit;
-  let msg = `// Showing rows ${start}-${end} of ${info.total} returned by Metabase.`;
+  let msg = start === 0
+    ? `// No rows at offset ${info.offset}; Metabase returned ${info.total} rows.`
+    : `// Showing rows ${start}-${end} of ${info.total} returned by Metabase (local output slice).`;
   if (nextOffset < info.total) {
-    msg += `\n// Use --offset ${nextOffset} to see next page.`;
+    msg += `\n// --offset ${nextOffset} selects the next slice by submitting the query again; results may change.`;
+  }
+  if (info.offset > 0) {
+    msg += "\n// --offset slices this response locally; it does not resume a previous query.";
+  }
+  if (info.truncated) {
+    msg += "\n// Metabase truncated the result; the returned row count is not the full query total. --offset cannot recover omitted rows.";
   }
   return msg;
 }
@@ -119,7 +151,8 @@ export function output(
   // Apply --jq (JMESPath)
   if (opts.jq) {
     processed = applyJmesPath(processed, opts.jq);
-    // After jq, always output as JSON regardless of format
+    // Explicit expressions own the result shape, including scalars or objects
+    // without _source. Always output that result as JSON regardless of format.
     process.stdout.write(formatJson(processed) + "\n");
   } else {
     const format = opts.format || "json";

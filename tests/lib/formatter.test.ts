@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   formatJson,
   formatCsv,
@@ -22,6 +22,8 @@ const sampleCols = [
 ];
 
 describe("formatter", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   describe("formatQueryResult", () => {
     it("converts rows+cols to array of objects", () => {
       const result = formatQueryResult(sampleRows, sampleCols);
@@ -29,6 +31,33 @@ describe("formatter", () => {
         { id: 1, name: "Alice", email: "alice@example.com" },
         { id: 2, name: "Bob", email: "bob@example.com" },
       ]);
+    });
+
+    it("preserves duplicate columns without stealing existing suffixed names", () => {
+      const result = formatQueryResult(
+        [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]],
+        ["id", "id", "id_2", "id", "id_2"].map((name) => ({ name })),
+      );
+      expect(result).toEqual([
+        { id: 1, id_3: 2, id_2: 3, id_4: 4, id_2_2: 5 },
+        { id: 6, id_3: 7, id_2: 8, id_4: 9, id_2_2: 10 },
+      ]);
+      expect(formatCsv(result).trim().split("\n")).toEqual([
+        "id,id_3,id_2,id_4,id_2_2", "1,2,3,4,5", "6,7,8,9,10",
+      ]);
+    });
+
+    it("retains prototype-like column names as ordinary JSON properties", () => {
+      const value = { nested: true };
+      const [row] = formatQueryResult(
+        [[value, "second", "constructor value", "toString value"]],
+        ["__proto__", "__proto__", "constructor", "toString"].map((name) => ({ name })),
+      );
+      expect(Object.getPrototypeOf(row)).toBe(Object.prototype);
+      expect(Object.hasOwn(row, "__proto__")).toBe(true);
+      expect(JSON.parse(formatJson(row))).toEqual(JSON.parse(
+        '{"__proto__":{"nested":true},"__proto___2":"second","constructor":"constructor value","toString":"toString value"}',
+      ));
     });
   });
 
@@ -62,10 +91,41 @@ describe("formatter", () => {
         "// Source: customer-a (https://mb.customer-a.test)"
       );
     });
+
+    it("keeps provenance after field selection while preserving a business _source", () => {
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      output([{ id: 1, _source: "business value" }], {
+        sourceId: "customer-a",
+        json: "id,_source_2",
+      });
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual([
+        { _source: "customer-a", id: 1, _source_2: "business value" },
+      ]);
+    });
+
+    it("preserves trusted inventory sources when no invocation source is supplied", () => {
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      output([{ _source: "a", alias: "a" }, { _source: "b", alias: "b" }], {
+        json: "alias",
+      });
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual([
+        { _source: "a", alias: "a" }, { _source: "b", alias: "b" },
+      ]);
+    });
+
+    it.each([
+      ["[].id", [1]],
+      ["length(@)", 1],
+      ["[].{id: id}", [{ id: 1 }]],
+    ])("allows explicit JMESPath result shape: %s", (jq, expected) => {
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      output([{ id: 1 }], { sourceId: "customer-a", jq: String(jq) });
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual(expected);
+    });
   });
 
   describe("withSourceAttribution", () => {
-    it("adds a non-empty _source without overwriting existing values", () => {
+    it("reserves _source and retains a conflicting business value under a unique name", () => {
       expect(
         withSourceAttribution(
           [{ id: 1 }, { id: 2, _source: "preserved" }],
@@ -73,12 +133,22 @@ describe("formatter", () => {
         )
       ).toEqual([
         { id: 1, _source: "customer-a" },
-        { id: 2, _source: "preserved" },
+        { id: 2, _source: "customer-a", _source_2: "preserved" },
       ]);
       expect(withSourceAttribution([], "customer-a")).toEqual([]);
       expect(() => withSourceAttribution([{ id: 1 }], "")).toThrow(
         /non-empty/
       );
+    });
+
+    it("uses a consistent collision-free source column across rows", () => {
+      expect(withSourceAttribution([
+        { _source: null, _source_2: "first" },
+        { _source: "second", _source_3: "third" },
+      ], "actual")).toEqual([
+        { _source: "actual", _source_4: null, _source_2: "first" },
+        { _source: "actual", _source_4: "second", _source_3: "third" },
+      ]);
     });
   });
 
@@ -93,6 +163,14 @@ describe("formatter", () => {
         { id: 1, name: "Alice" },
         { id: 2, name: "Bob" },
       ]);
+    });
+
+    it("selects only own fields and safely retains prototype-like names", () => {
+      const [row] = formatQueryResult([["value"]], [{ name: "__proto__" }]);
+      const [selected] = applyJsonFieldSelection([row], "__proto__,constructor");
+      expect(Object.keys(selected)).toEqual(["__proto__"]);
+      expect(JSON.stringify(selected)).toBe('{"__proto__":"value"}');
+      expect(Object.getPrototypeOf(selected)).toBe(Object.prototype);
     });
   });
 
@@ -150,6 +228,27 @@ describe("formatter", () => {
   });
 
   describe("formatPaginationInfo", () => {
+    it("warns that changing the slice submits the query again", () => {
+      const msg = formatPaginationInfo({ total: 200, offset: 0, limit: 100 });
+      expect(msg).toContain("local output slice");
+      expect(msg).toContain("submitting the query again");
+      expect(msg).toContain("results may change");
+    });
+
+    it("reports an exhausted slice without an inverted row range", () => {
+      const msg = formatPaginationInfo({ total: 3, offset: 10, limit: 100 });
+      expect(msg).toContain("No rows at offset 10");
+      expect(msg).not.toContain("11-3");
+      expect(msg).not.toContain("next slice");
+    });
+
+    it("warns about upstream truncation even when all returned rows fit", () => {
+      const msg = formatPaginationInfo({ total: 3, offset: 0, limit: 100, truncated: true });
+      expect(msg).toContain("Metabase truncated");
+      expect(msg).toContain("not the full query total");
+      expect(msg).toContain("--offset cannot recover");
+    });
+
     it("formats pagination metadata", () => {
       const msg = formatPaginationInfo({ total: 1523, offset: 0, limit: 100 });
       expect(msg).toContain("1-100");
