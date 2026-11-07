@@ -227,6 +227,64 @@ Effect: **local-write**. May modify state: **true**.
 mb auth use prod
 ```
 
+## mb auth check
+
+Verify authentication and database-list access against Metabase
+
+| Option | Description | Default / environment |
+| --- | --- | --- |
+| -h, --help | display help for command |  |
+| -V, --version | output the version number (global) |  |
+| --host <url> | Override Metabase server URL (global) |  |
+| --token <value> | Override authentication token (global) |  |
+| --profile <alias> | Select a named Profile for this invocation (global) |  |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
+| --json <fields> | Select specific fields in JSON output (global) |  |
+| --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
+| --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
+| --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
+
+Effect: **read**. May modify state: **false**.
+
+```bash
+mb auth check --profile prod
+```
+
+## mb auth set-default-db
+
+Set the selected Profile's default database locally without switching the Active Profile
+
+| Argument | Type | Required |
+| --- | --- | --- |
+| db-id | integer | true |
+
+| Option | Description | Default / environment |
+| --- | --- | --- |
+| -h, --help | display help for command |  |
+| -V, --version | output the version number (global) |  |
+| --host <url> | Override Metabase server URL (global) |  |
+| --token <value> | Override authentication token (global) |  |
+| --profile <alias> | Select a named Profile for this invocation (global) |  |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
+| --json <fields> | Select specific fields in JSON output (global) |  |
+| --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
+| --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
+| --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
+
+Effect: **local-write**. May modify state: **true**.
+
+```bash
+mb auth set-default-db 1 --profile prod
+```
+
 ## mb db
 
 Database metadata operations
@@ -402,16 +460,50 @@ Effect: **read**. May modify state: **false**.
 mb db metadata 1
 ```
 
+## mb db schema
+
+Compact database schema with field types, descriptions, and declared key relationships
+
+| Argument | Type | Required |
+| --- | --- | --- |
+| db-id | integer | true |
+
+| Option | Description | Default / environment |
+| --- | --- | --- |
+| --schema <name> | Select a database schema |  |
+| --tables <names> | Comma-separated table names, schema-qualified names, or IDs |  |
+| -h, --help | display help for command |  |
+| -V, --version | output the version number (global) |  |
+| --host <url> | Override Metabase server URL (global) |  |
+| --token <value> | Override authentication token (global) |  |
+| --profile <alias> | Select a named Profile for this invocation (global) |  |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
+| --json <fields> | Select specific fields in JSON output (global) |  |
+| --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
+| --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
+| --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
+
+Effect: **read**. May modify state: **false**.
+
+```bash
+mb db schema 1 --tables orders,customers
+```
+
 ## mb query
 
 Execute a native SQL query
 
 | Argument | Type | Required |
 | --- | --- | --- |
-| sql | string | true |
+| sql | string | false |
 
 | Option | Description | Default / environment |
 | --- | --- | --- |
+| --file <path> | Read UTF-8 SQL from a file, or - for stdin |  |
 | --db <id> | Database ID (or set MB_DEFAULT_DB) |  |
 | --limit <n> | Max rows to display from the response (local slice) | 100 |
 | --offset <n> | Rows to skip locally; each invocation submits the query again | 0 |
@@ -498,12 +590,14 @@ Create a saved card/question
 | --- | --- | --- |
 | --name <name> | Card name |  |
 | --database <id> | Database ID for inline native SQL mode |  |
+| --db <id> | Alias for --database |  |
 | --sql <sql> | Native SQL query text for inline mode |  |
+| --sql-file <path> | Read native SQL from a UTF-8 file, or - for stdin |  |
 | --display <type> | Card display type |  |
 | --collection <id> | Collection ID or NanoID |  |
 | --description <text> | Card description |  |
 | --type <type> | Card type |  |
-| --from <file> | Read full create payload from JSON file |  |
+| --from <file> | Read full create payload from JSON file, or - for stdin |  |
 | -h, --help | display help for command |  |
 | -V, --version | output the version number (global) |  |
 | --host <url> | Override Metabase server URL (global) |  |
@@ -542,7 +636,8 @@ Update a saved card/question
 | --collection <id> | Collection ID or NanoID |  |
 | --archived | Archive the card |  |
 | --sql <sql> | Native SQL query text for native-query cards |  |
-| --from <file> | Read update patch from JSON file |  |
+| --sql-file <path> | Read native SQL from a UTF-8 file, or - for stdin |  |
+| --from <file> | Read update patch from JSON file, or - for stdin |  |
 | -h, --help | display help for command |  |
 | -V, --version | output the version number (global) |  |
 | --host <url> | Override Metabase server URL (global) |  |
@@ -673,7 +768,9 @@ Execute a saved card/question
 | Option | Description | Default / environment |
 | --- | --- | --- |
 | --params <json> | Parameters as JSON key-value pairs |  |
+| --params-file <path> | Read parameter JSON from a file, or - for stdin |  |
 | --template-tags <json> | Template tag parameters as JSON key-value pairs (for native queries) |  |
+| --template-tags-file <path> | Read template tag JSON from a file, or - for stdin |  |
 | --limit <n> | Max rows to display from the response (local slice) | 100 |
 | --offset <n> | Rows to skip locally; each invocation submits the query again | 0 |
 | -h, --help | display help for command |  |

@@ -58,4 +58,31 @@ with `[<alias-or-host-key>] `.
 receive a collision-free numeric suffix. Explicit JMESPath transformations
 control their own output shape and may omit attribution or return scalars.
 Unauthenticated `auth status` has no resolved source and is an exception.
+Offline `mb schema` describes CLI commands rather than an Instance, so it also
+has no source attribution.
 _Avoid_: source tag, origin marker
+
+**Command schema**:
+The offline, versioned machine-readable description produced by `mb schema`.
+It derives commands, arguments, options, defaults, and conflicts from the same
+Commander definitions as help and the generated command reference. It also
+describes effects, examples, and default JSON output/error contracts.
+_Avoid_: database schema when referring to CLI introspection
+
+**Database schema**:
+The compact database, table, field, and declared-key description produced by
+`mb db schema`. Unlike the command schema, it reads Instance metadata and carries
+source attribution. Missing metadata is not evidence of missing physical fields
+or inferred relationships.
+
+**Operation receipt**:
+A JSON record describing a successful auth or Card mutation, including
+`operation`, `ok`, and source attribution. Revocation state is reported separately
+from local Profile removal; a successful local removal does not prove a server
+session was revoked.
+
+**HTTP budget**:
+The shared `--deadline` across one invocation's requests, backoff, and session
+renewal. `--timeout` bounds each request including its body; `--retries` permits
+bounded transient retries only for GET. SQL execution is not classified as
+read-only merely because the CLI retrieves its results.
