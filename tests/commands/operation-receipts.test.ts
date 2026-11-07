@@ -91,6 +91,61 @@ describe("operation receipts", () => {
     expect(await execute(["card", "delete", "12", "--hard-delete"])).toEqual([{ _source: "prod", operation: "delete", ok: true, id: 12, status: "deleted" }]);
   });
 
+  it("keeps the login receipt tied to the persisted alias if another agent switches Active Profile", async () => {
+    const auth = await import("../../src/lib/auth.js");
+    const { loadConfig, saveConfig } = await import("../../src/lib/config.js");
+    const original = auth.storeToken;
+    vi.spyOn(auth, "storeToken").mockImplementation((...args) => {
+      const alias = original(...args);
+      const changed = loadConfig(); changed.current_profile = "prod"; saveConfig(changed);
+      return alias;
+    });
+    const rows = await execute(["auth", "login", "--host", "https://new.test", "--token", "mb_new", "--as", "new-profile"]);
+    expect(rows[0]).toMatchObject({ _source: "new-profile", profile: "new-profile" });
+    expect(loadConfig().current_profile).toBe("prod");
+  });
+
+  it("preserves unrelated Profile changes made while session revocation is pending", async () => {
+    const { loadConfig, saveConfig } = await import("../../src/lib/config.js");
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      const changed = loadConfig();
+      changed.profiles!.new = { instance: "https://new.test", token: "mb_new", token_type: "api_key" };
+      changed.profiles!.prod.default_db = 9;
+      changed.current_profile = "new";
+      saveConfig(changed);
+      return new Response(null, { status: 204 });
+    }));
+    const rows = await execute(["auth", "rm", "staging"]);
+    expect(rows[0]).toMatchObject({ profile: "staging", status: "removed" });
+    expect(loadConfig()).toMatchObject({ current_profile: "new", profiles: { new: { token: "mb_new" }, prod: { default_db: 9 } } });
+    expect(loadConfig().profiles?.staging).toBeUndefined();
+  });
+
+  it("does not delete a replacement Profile created during revocation", async () => {
+    const { loadConfig, saveConfig } = await import("../../src/lib/config.js");
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      const changed = loadConfig(); changed.profiles!.staging.token = "replacement"; saveConfig(changed);
+      return new Response(null, { status: 204 });
+    }));
+    expect(await execute(["auth", "rm", "staging", "--error-format", "json"])).toBeUndefined();
+    expect(loadConfig().profiles?.staging.token).toBe("replacement");
+    const stderr = vi.mocked(process.stderr.write).mock.calls.map(call => String(call[0])).join("");
+    expect(JSON.parse(stderr)).toMatchObject({ code: "CONFIGURATION_ERROR", source: "staging" });
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("rejects mixed explicit credential sources before persistence or network calls", async () => {
+    const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+    const { runCli } = await import("../../src/program.js");
+    await runCli(["node", "mb", "auth", "login", "--host", "https://new.test", "--token", "mb_secret", "--username", "user", "--password", "password", "--as", "new-profile", "--error-format", "json"]);
+    const { loadConfig } = await import("../../src/lib/config.js");
+    expect(loadConfig().profiles?.["new-profile"]).toBeUndefined();
+    expect(fetch).not.toHaveBeenCalled();
+    const stderr = vi.mocked(process.stderr.write).mock.calls.map(call => String(call[0])).join("");
+    expect(JSON.parse(stderr)).toMatchObject({ code: "INVALID_INPUT" });
+    expect(stderr).not.toContain("mb_secret");
+  });
+
   it("passes the selected request timeout into password login", async () => {
     const { handleLoginPassword } = await import("../../src/commands/auth/login.js");
     const fetch = vi.fn(() => new Promise<Response>(() => {})); vi.stubGlobal("fetch", fetch);

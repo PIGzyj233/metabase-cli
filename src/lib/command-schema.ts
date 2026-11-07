@@ -6,7 +6,7 @@ type Effect = "inspect" | "read" | "execute" | "write" | "local-write" | "authen
 interface Contract { effect: Effect; output: string; examples: string[]; constraints?: string[] }
 
 export const COMMAND_CONTRACTS: Record<string, Contract> = {
-  "auth login": { effect: "authenticate", output: "receipt", examples: ["mb auth login --host https://metabase.example.com --token-stdin --as prod"], constraints: ["Provide one credential source: token, token-stdin, or username plus password."] },
+  "auth login": { effect: "authenticate", output: "receipt", examples: ["mb auth login --host https://metabase.example.com --token-stdin --as prod"], constraints: ["Provide one credential source: token, token-stdin, or username plus password. Explicit username and password must be provided together."] },
   "auth list": { effect: "inspect", output: "profiles", examples: ["mb auth list"] },
   "auth status": { effect: "inspect", output: "authStatus", examples: ["mb auth status --profile prod"] },
   "auth check": { effect: "read", output: "authCheck", examples: ["mb auth check --profile prod"] },

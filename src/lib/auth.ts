@@ -287,7 +287,7 @@ export function storeToken(
   tokenType: "api_key" | "session",
   username?: string,
   options: StoreTokenOptions = {}
-): void {
+): string {
   const config = loadConfig();
   const profiles = config.profiles ?? {};
   let alias: string;
@@ -325,6 +325,7 @@ export function storeToken(
     hosts: {},
     current_host: null,
   });
+  return alias;
 }
 
 export function clearToken(host?: string): void {

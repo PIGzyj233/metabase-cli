@@ -78,7 +78,7 @@ Login to Metabase
 
 Effect: **authenticate**. May modify state: **true**.
 
-- Provide one credential source: token, token-stdin, or username plus password.
+- Provide one credential source: token, token-stdin, or username plus password. Explicit username and password must be provided together.
 
 ```bash
 mb auth login --host https://metabase.example.com --token-stdin --as prod

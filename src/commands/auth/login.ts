@@ -1,8 +1,8 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { handleCommandError } from "../../lib/errors.js";
 import { createInterface } from "node:readline";
 import { storeToken, loginWithPassword, detectTokenType, type StoreTokenOptions } from "../../lib/auth.js";
-import { normalizeHostKey, loadConfig } from "../../lib/config.js";
+import { normalizeHostKey } from "../../lib/config.js";
 import { outputOperationResult, type OperationResult } from "../../lib/operation-result.js";
 import type { GlobalOptions } from "../../types/index.js";
 
@@ -35,11 +35,11 @@ export async function handleLoginToken(
   const url = new URL(host.startsWith("http") ? host : `https://${host}`);
   const tokenType = detectTokenType(token);
   const hostKey = normalizeHostKey(host);
-  storeToken(hostKey, url.protocol.replace(":", ""), token, tokenType, undefined, options);
+  const alias = storeToken(hostKey, url.protocol.replace(":", ""), token, tokenType, undefined, options);
   process.stderr.write(
     `Logged in to ${hostKey} with ${tokenType === "api_key" ? "API key" : "session token"}.\n`
   );
-  return loginReceipt(false);
+  return loginReceipt(alias, `${url.protocol}//${hostKey}`, false);
 }
 
 export async function handleLoginPassword(
@@ -53,17 +53,13 @@ export async function handleLoginPassword(
   const url = new URL(baseUrl);
   const sessionToken = await loginWithPassword(baseUrl, username, password, requestOptions);
   const hostKey = normalizeHostKey(baseUrl);
-  storeToken(hostKey, url.protocol.replace(":", ""), sessionToken, "session", username, options);
+  const alias = storeToken(hostKey, url.protocol.replace(":", ""), sessionToken, "session", username, options);
   process.stderr.write(`Logged in to ${hostKey} as ${username}.\n`);
-  return loginReceipt(true);
+  return loginReceipt(alias, `${url.protocol}//${hostKey}`, true);
 }
 
-function loginReceipt(verified: boolean): OperationResult {
-  const config = loadConfig();
-  const alias = config.current_profile;
-  const profile = alias ? config.profiles?.[alias] : undefined;
-  if (!alias || !profile) throw new Error("Profile disappeared after login; inspect 'mb auth list'.");
-  return { sourceId: alias, sourceUrl: profile.instance,
+function loginReceipt(alias: string, instance: string, verified: boolean): OperationResult {
+  return { sourceId: alias, sourceUrl: instance,
     record: { operation: "login", ok: true, profile: alias, status: "stored", verified } };
 }
 
@@ -81,8 +77,8 @@ export function registerAuthLoginCommand(parent: Command): void {
   parent
     .command("login")
     .description("Login to Metabase")
-    .option("--token <value>", "API key for authentication")
-    .option("--token-stdin", "Read API key or session token from stdin")
+    .addOption(new Option("--token <value>", "API key for authentication").conflicts(["tokenStdin", "username", "password"]))
+    .addOption(new Option("--token-stdin", "Read API key or session token from stdin").conflicts(["token", "username", "password"]))
     .option("--username <value>", "Username for password login")
     .option("--password <value>", "Password for password login")
     .option("--as <alias>", "Profile alias to create or update")
@@ -94,8 +90,14 @@ export function registerAuthLoginCommand(parent: Command): void {
         overwrite: opts.overwrite,
       };
       try {
-        if (opts.token && opts.tokenStdin) {
+        if (opts.token !== undefined && opts.tokenStdin) {
           throw new Error("--token and --token-stdin cannot be combined.");
+        }
+        if ((opts.token !== undefined || opts.tokenStdin) && (opts.username !== undefined || opts.password !== undefined)) {
+          throw new Error("Token credentials cannot be combined with --username or --password.");
+        }
+        if ((opts.username !== undefined) !== (opts.password !== undefined)) {
+          throw new Error("--username and --password must be provided together.");
         }
 
         // Branch 1: explicit --token
