@@ -69,6 +69,10 @@ MB_HOST=https://metabase.example.com MB_TOKEN=mb_xxxx mb db list
 mb db list --host https://metabase.example.com --token mb_xxxx
 ```
 
+Bare overrides require both a host and token; an incomplete override is an
+error and never falls back to the Active Profile. A bare query also needs
+`--db` or `MB_DEFAULT_DB`; it does not inherit a saved Profile's database ID.
+
 Profile management commands act on `~/.config/mb/config.yml`, not on
 environment variables. Environment variables decide which identity a single
 command runs as; the config file is the inventory of Profiles you can pick from.

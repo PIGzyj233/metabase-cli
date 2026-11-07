@@ -514,7 +514,7 @@ hosts:
       expect(status.tokenType).toBe("session");
     });
 
-    it("CLI --token takes priority over config", async () => {
+    it("rejects a token-only override instead of using the Active Profile", async () => {
       // Store a config token first
       const { handleLoginToken } = await import(
         "../../src/commands/auth/login.js"
@@ -524,9 +524,8 @@ hosts:
       const { getAuthStatus } = await import(
         "../../src/commands/auth/status.js"
       );
-      const status = getAuthStatus({ token: "mb_clioverride" });
-      expect(status.loggedIn).toBe(true);
-      expect(status.tokenType).toBe("api_key");
+      expect(() => getAuthStatus({ token: "mb_clioverride" }))
+        .toThrow(/requires both a host/);
     });
 
     it("formats output as structured JSON data", async () => {

@@ -104,3 +104,46 @@ describe("Profile session renewal isolation", () => {
     expect(stderr).toHaveBeenCalledWith("[admin] Error: failed\n");
   });
 });
+
+
+describe("bare override isolation", () => {
+  it.each([
+    { host: "https://other.test" },
+    { token: "mb_other" },
+  ])("rejects incomplete CLI overrides instead of using the Active Profile: %j", async (opts) => {
+    const { resolveProfile } = await import("../../src/lib/auth.js");
+    expect(() => resolveProfile(opts)).toThrow(/requires both a host.*and a token/);
+  });
+
+  it.each(["MB_HOST", "MB_TOKEN", "MB_SESSION_TOKEN"])("rejects incomplete environment overrides: %s", async (key) => {
+    vi.stubEnv(key, key === "MB_HOST" ? "https://other.test" : "fake-token");
+    const { resolveProfile } = await import("../../src/lib/auth.js");
+    expect(() => resolveProfile({})).toThrow(/requires both a host.*and a token/);
+  });
+
+  it("does not inherit the Active Profile database for a bare override", async () => {
+    const { resolveDefaultDb } = await import("../../src/lib/config.js");
+    const opts = { host: "https://other.test", token: "mb_other" };
+    expect(resolveDefaultDb(opts)).toBeUndefined();
+    expect(resolveDefaultDb({ ...opts, db: 9 })).toBe(9);
+    vi.stubEnv("MB_DEFAULT_DB", "10");
+    expect(resolveDefaultDb(opts)).toBe(10);
+  });
+
+  it("uses only the selected Profile database and rejects unknown Profiles", async () => {
+    const { resolveDefaultDb } = await import("../../src/lib/config.js");
+    expect(resolveDefaultDb({ profile: "analyst" })).toBe(8);
+    expect(() => resolveDefaultDb({ profile: "missing" })).toThrow(/Unknown Profile/);
+  });
+
+  it("rejects invalid default database IDs", async () => {
+    const { resolveDefaultDb, loadConfig, saveConfig } = await import("../../src/lib/config.js");
+    vi.stubEnv("MB_DEFAULT_DB", "1abc");
+    expect(() => resolveDefaultDb({})).toThrow(/MB_DEFAULT_DB/);
+    vi.stubEnv("MB_DEFAULT_DB", "");
+    const config = loadConfig();
+    config.profiles!.admin.default_db = -1;
+    saveConfig(config);
+    expect(() => resolveDefaultDb({})).toThrow(/Profile default_db/);
+  });
+});

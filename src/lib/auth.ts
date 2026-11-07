@@ -119,7 +119,10 @@ export function resolveProfile(opts: GlobalOptions): ResolvedIdentity | null {
 
   const bareHost = cliHost ?? envHost;
   const bareToken = cliToken ?? envToken ?? envSession;
-  if (bareHost && bareToken) {
+  if (bareHost || bareToken) {
+    if (!bareHost || !bareToken) {
+      throw new Error("Bare override requires both a host (--host or MB_HOST) and a token (--token, MB_TOKEN, or MB_SESSION_TOKEN).");
+    }
     const baseUrl = ensureBaseUrl(bareHost);
     const hostKey = normalizeHostKey(baseUrl);
     return {

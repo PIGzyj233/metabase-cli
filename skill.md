@@ -70,6 +70,10 @@ MB_HOST=https://metabase.example.com MB_TOKEN=mb_xxxx mb db list
 mb db list --host https://metabase.example.com --token mb_xxxx
 ```
 
+Always supply both a host and token for a bare override. Incomplete overrides
+fail without falling back to the Active Profile. For bare SQL queries, also
+supply `--db` or `MB_DEFAULT_DB`; saved Profile defaults do not apply.
+
 Profile management commands act on `~/.config/mb/config.yml`, not on
 environment variables. Environment variables decide which identity a single
 command runs as; the config file is the inventory of Profiles you can pick from.
