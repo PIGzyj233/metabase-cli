@@ -72,3 +72,26 @@ describe("query input validation", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+
+describe("card parameter validation", () => {
+  it("rejects conflicting parameter modes before fetching", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await expect(handleCardRun(12, {
+      ...identity, params: '{"region":"us"}', templateTags: '{"date":"2026-01-01"}',
+    })).rejects.toThrow("--params and --template-tags cannot be combined");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid JSON objects before fetching card metadata", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    for (const value of ["", "{", "null", "[]", "123", '"text"']) {
+      for (const flag of ["params", "templateTags"]) {
+        await expect(handleCardRun(12, { ...identity, [flag]: value })).rejects.toThrow(/JSON/);
+      }
+    }
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
