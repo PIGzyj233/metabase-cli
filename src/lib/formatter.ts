@@ -3,17 +3,33 @@ import { stringify } from "csv-stringify/sync";
 import jmespath from "jmespath";
 import type { PaginationInfo } from "../types/index.js";
 
+function uniqueFieldNames(names: string[], reserved: string[] = []): string[] {
+  // Keep original names available for their first occurrence. Generated suffixes
+  // must not steal a later real column name (for example: id, id, id_2).
+  const originalNames = new Set(names);
+  const used = new Set(reserved);
+  return names.map((name) => {
+    let candidate = name;
+    let suffix = 2;
+    while (used.has(candidate)) {
+      do {
+        candidate = `${name}_${suffix++}`;
+      } while (originalNames.has(candidate));
+    }
+    used.add(candidate);
+    return candidate;
+  });
+}
+
 export function formatQueryResult(
   rows: any[][],
   cols: { name: string }[]
 ): Record<string, any>[] {
-  return rows.map((row) => {
-    const obj: Record<string, any> = {};
-    cols.forEach((col, i) => {
-      obj[col.name] = row[i];
-    });
-    return obj;
-  });
+  const names = uniqueFieldNames(cols.map((col) => col.name));
+  // fromEntries defines own properties even for names such as __proto__.
+  return rows.map((row) =>
+    Object.fromEntries(names.map((name, i) => [name, row[i]])),
+  );
 }
 
 export function formatJson(data: any): string {

@@ -192,6 +192,8 @@ mb card delete 123 --hard-delete
 ## Output
 
 - Default output is JSON (array of objects), ideal for AI parsing
+- Duplicate query column names receive collision-free numeric suffixes:
+  `id, id, id_2` becomes `id, id_3, id_2`. Use explicit SQL aliases when possible.
 - Every JSON record carries `_source`: the Profile alias, or the Host key for
   bare override calls
 - stderr includes `// Source: <alias-or-host-key> (<url>)`

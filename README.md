@@ -111,6 +111,8 @@ reports truncation, stderr warns that omitted rows cannot be recovered with
 `--offset`.
 
 - JSON by default (array of objects) — ideal for AI agent parsing
+- Duplicate query column names get deterministic numeric suffixes without
+  overwriting real column names: `id, id, id_2` becomes `id, id_3, id_2`.
 - Every JSON record includes `_source`: the Profile alias, or the Host key for
   bare override calls
 - stderr includes `// Source: <alias-or-host-key> (<url>)`

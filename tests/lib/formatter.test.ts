@@ -30,6 +30,33 @@ describe("formatter", () => {
         { id: 2, name: "Bob", email: "bob@example.com" },
       ]);
     });
+
+    it("preserves duplicate columns without stealing existing suffixed names", () => {
+      const result = formatQueryResult(
+        [[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]],
+        ["id", "id", "id_2", "id", "id_2"].map((name) => ({ name })),
+      );
+      expect(result).toEqual([
+        { id: 1, id_3: 2, id_2: 3, id_4: 4, id_2_2: 5 },
+        { id: 6, id_3: 7, id_2: 8, id_4: 9, id_2_2: 10 },
+      ]);
+      expect(formatCsv(result).trim().split("\n")).toEqual([
+        "id,id_3,id_2,id_4,id_2_2", "1,2,3,4,5", "6,7,8,9,10",
+      ]);
+    });
+
+    it("retains prototype-like column names as ordinary JSON properties", () => {
+      const value = { nested: true };
+      const [row] = formatQueryResult(
+        [[value, "second", "constructor value", "toString value"]],
+        ["__proto__", "__proto__", "constructor", "toString"].map((name) => ({ name })),
+      );
+      expect(Object.getPrototypeOf(row)).toBe(Object.prototype);
+      expect(Object.hasOwn(row, "__proto__")).toBe(true);
+      expect(JSON.parse(formatJson(row))).toEqual(JSON.parse(
+        '{"__proto__":{"nested":true},"__proto___2":"second","constructor":"constructor value","toString":"toString value"}',
+      ));
+    });
   });
 
   describe("formatJson", () => {
