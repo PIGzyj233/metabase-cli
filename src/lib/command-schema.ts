@@ -35,6 +35,7 @@ export const COMMAND_CONTRACTS: Record<string, Contract> = {
 };
 
 const string = { type: "string" };
+const nullableString = { type: ["string", "null"] };
 const integer = { type: "integer" };
 const bool = { type: "boolean" };
 function records(properties: Record<string, unknown> = {}, required: string[] = []) {
@@ -46,12 +47,24 @@ export const OUTPUT_DEFINITIONS: Record<string, unknown> = {
   profiles: records({ alias: string, instance: string, tokenType: string, active: bool }, ["_source", "alias", "instance", "tokenType", "active"]),
   authStatus: records({ loggedIn: bool, host: string, tokenType: string }, ["loggedIn"]),
   authCheck: records({ reachable: bool, authenticated: bool, database_count: integer, elapsed_ms: { type: "number" } }, ["_source", "reachable", "authenticated"]),
-  defaultDatabase: records({ operation: string, profile: string, default_db: integer }, ["_source", "operation", "profile", "default_db"]),
+  defaultDatabase: records({ operation: string, ok: bool, status: string, profile: string, default_db: integer }, ["_source", "operation", "ok", "profile", "default_db"]),
   databases: records({ id: integer, name: string, engine: string }, ["_source", "id", "name"]),
   schemas: records({ schema: string }, ["_source", "schema"]),
   tables: records({ id: integer, name: string, schema: { type: ["string", "null"] } }, ["_source", "id", "name"]),
   fields: records({ id: integer, name: string, database_type: string, description: { type: ["string", "null"] } }, ["_source", "id", "name"]),
-  databaseSchema: records({ database_id: integer, name: string, engine: string, tables: { type: "array", items: { type: "object", properties: { id: integer, name: string, schema: { type: ["string", "null"] }, fields_available: bool, fields: { type: "array", items: { type: "object", properties: { id: integer, name: string, primary_key: bool, foreign_key: { type: ["object", "null"] } }, additionalProperties: true } } }, additionalProperties: true } } }, ["_source", "database_id", "tables"]),
+  databaseSchema: records({
+    database_id: integer, name: nullableString, engine: nullableString,
+    tables: { type: "array", items: { type: "object", properties: {
+      id: integer, name: nullableString, schema: nullableString, description: nullableString,
+      fields_available: bool, fields: { type: "array", items: { type: "object", properties: {
+        id: integer, name: nullableString, database_type: nullableString,
+        semantic_type: nullableString, description: nullableString, primary_key: bool,
+        foreign_key: { anyOf: [{ type: "null" }, { type: "object", properties: {
+          field_id: integer, table_id: integer, schema: nullableString, table: nullableString, field: nullableString,
+        }, required: ["field_id"], additionalProperties: false }] },
+      }, additionalProperties: true } },
+    }, additionalProperties: true } },
+  }, ["_source", "database_id", "tables"]),
   cards: records({ id: integer, name: string, collection_id: { type: ["integer", "null"] } }, ["_source", "id", "name"]),
   cardDetail: records({ id: integer, name: string, query_type: string, query: { type: ["string", "object"] }, parameters: { type: "array" }, template_tags: { type: "array" } }, ["_source", "id", "name"]),
   collections: records({ id: { type: ["integer", "string"] }, name: string, location: string }, ["_source", "id", "name"]),

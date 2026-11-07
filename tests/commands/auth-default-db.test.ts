@@ -29,7 +29,7 @@ describe("Profile default database settings", () => {
     const { handleAuthSetDefaultDb } = await import("../../src/commands/auth/set-default-db.js");
     const { loadConfig } = await import("../../src/lib/config.js");
     const result = handleAuthSetDefaultDb("9", { profile: "b" });
-    expect(result.record).toEqual({ operation: "set-default-db", profile: "b", default_db: 9 });
+    expect(result.record).toEqual({ operation: "set-default-db", ok: true, status: "updated", profile: "b", default_db: 9 });
     expect(loadConfig()).toMatchObject({ current_profile: "a", profiles: { a: { default_db: 1 }, b: { default_db: 9, token: "mb_b" } } });
     expect(fetch).not.toHaveBeenCalled();
   });

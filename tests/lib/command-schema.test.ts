@@ -49,6 +49,19 @@ describe("machine command schema", () => {
     expect(reference).toContain("MB_ERROR_FORMAT");
   });
 
+  it("describes offline Profile-setting receipts and nullable metadata faithfully", () => {
+    const program = createProgram();
+    const defaults = commandSchema(program, ["auth", "set-default-db"]);
+    expect(defaults.command.effect).toBe("local-write");
+    const settings = defaults.definitions.defaultDatabase as any;
+    expect(settings.items.required).toContain("ok");
+    const schema = commandSchema(program, ["db", "schema"]);
+    const database = schema.definitions.databaseSchema as any;
+    expect(database.items.properties.engine.type).toEqual(["string", "null"]);
+    const relationship = database.items.properties.tables.items.properties.fields.items.properties.foreign_key;
+    expect(relationship.anyOf[1].required).toEqual(["field_id"]);
+  });
+
   it("works offline even with an unavailable Profile and incomplete runtime credentials", async () => {
     const result = await cli(["schema", "query"], { MB_PROFILE: "nonexistent", MB_HOST: "https://unreachable.invalid" });
     expect(result.code).toBe(0); expect(result.stderr).toBe("");
