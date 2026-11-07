@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { readJsonInput, resolveSqlInput } from "../../lib/input-source.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
@@ -23,6 +23,7 @@ export async function handleCardCreate(opts: CardCreateOptions): Promise<any> {
   const inlineFlags: Array<keyof CardCreateOptions> = [
     "name",
     "database",
+    "db",
     "sql",
     "sqlFile",
     "display",
@@ -31,6 +32,11 @@ export async function handleCardCreate(opts: CardCreateOptions): Promise<any> {
     "type",
   ];
 
+  if (opts.database !== undefined && opts.db !== undefined) {
+    throw new Error("--database and --db cannot be combined; use one database option.");
+  }
+  const database = opts.database ?? opts.db;
+
   let body: Record<string, any>;
   if (opts.from !== undefined) {
     if (inlineFlags.some((flag) => opts[flag] !== undefined)) {
@@ -38,11 +44,11 @@ export async function handleCardCreate(opts: CardCreateOptions): Promise<any> {
     }
     body = await readJsonInput(opts.from, "Card create JSON payload");
   } else {
-    if (!opts.name || !opts.database || (opts.sql === undefined && opts.sqlFile === undefined)) {
-      throw new Error("Inline mode requires --name, --database, and --sql or --sql-file.");
+    if (!opts.name || !database || (opts.sql === undefined && opts.sqlFile === undefined)) {
+      throw new Error("Inline mode requires --name, --database/--db, and --sql or --sql-file.");
     }
 
-    const databaseId = parseRequiredId(opts.database, "Database ID");
+    const databaseId = parseRequiredId(database, "Database ID");
     const sql = await resolveSqlInput(opts.sql, opts.sqlFile, "--sql-file");
     body = {
       name: opts.name,
@@ -76,6 +82,7 @@ export function registerCardCreateCommand(parent: Command): void {
     .description("Create a saved card/question")
     .option("--name <name>", "Card name")
     .option("--database <id>", "Database ID for inline native SQL mode")
+    .addOption(new Option("--db <id>", "Alias for --database").conflicts("database"))
     .option("--sql <sql>", "Native SQL query text for inline mode")
     .option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin")
     .option("--display <type>", "Card display type")

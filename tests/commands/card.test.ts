@@ -192,7 +192,7 @@ describe("card commands", () => {
       const { handleCardCreate } = await import("../../src/commands/card/create.js");
       await expect(
         handleCardCreate({ name: "Missing SQL", database: "1" })
-      ).rejects.toThrow("Inline mode requires --name, --database, and --sql or --sql-file.");
+      ).rejects.toThrow("Inline mode requires --name, --database/--db, and --sql or --sql-file.");
       expect(getFetchCalls()).toHaveLength(0);
     });
 

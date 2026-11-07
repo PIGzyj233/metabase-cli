@@ -57,6 +57,7 @@ export interface ApiErrorResponse {
 export interface CardCreateOptions extends GlobalOptions {
   name?: string;
   database?: string;
+  db?: string;
   sql?: string;
   sqlFile?: string;
   display?: string;

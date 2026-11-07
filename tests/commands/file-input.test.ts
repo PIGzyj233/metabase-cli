@@ -93,6 +93,18 @@ describe("Card parameter file input", () => {
 });
 
 describe("Card SQL and payload file input", () => {
+  it("accepts --db for create and rejects simultaneous database aliases", async () => {
+    const created = await runCli(["card", "create", "--name", "Report", "--db", "7", "--sql", "SELECT 1"]);
+    expect(created.code, created.stderr).toBe(0);
+    expect(requests[0].body.dataset_query.database).toBe(7);
+    for (const secondId of ["7", "8"]) {
+      const invalid = await runCli(["card", "create", "--name", "Report", "--db", "7", "--database", secondId, "--sql", "SELECT 1"]);
+      expect(invalid.code).not.toBe(0);
+      expect(invalid.stderr).toMatch(/cannot be used with/);
+    }
+    expect(requests).toHaveLength(1);
+  });
+
   it("creates and updates Cards from SQL files or stdin without changing literal text", async () => {
     const sql = "SELECT '$HOME', '`literal`'\nFROM orders;\n";
     const path = join(inputDir, "card.sql");
