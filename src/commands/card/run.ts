@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { parsePositiveInteger, parseNonNegativeInteger, validatePagination } from "../../lib/input-validation.js";
+import { readJsonInput } from "../../lib/input-source.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import { unpackDatasetResult, type DatasetResult } from "../../lib/dataset-result.js";
@@ -9,7 +10,9 @@ import type { GlobalOptions } from "../../types/index.js";
 
 interface CardRunOptions extends GlobalOptions {
   params?: string;
+  paramsFile?: string;
   templateTags?: string;
+  templateTagsFile?: string;
   limit?: number;
   offset?: number;
 }
@@ -99,12 +102,23 @@ export async function handleCardRun(
 ): Promise<DatasetResult> {
   const parsedCardId = parsePositiveInteger(cardId, "Card ID");
   validatePagination(opts);
-  if (opts.params !== undefined && opts.templateTags !== undefined) {
-    throw new Error("--params and --template-tags cannot be combined.");
+  const hasParams = opts.params !== undefined || opts.paramsFile !== undefined;
+  const hasTemplateTags = opts.templateTags !== undefined || opts.templateTagsFile !== undefined;
+  if (hasParams && hasTemplateTags) {
+    throw new Error("--params and --template-tags cannot be combined (including their file variants).");
   }
-  const params = opts.params === undefined ? undefined : parseParameterObject(opts.params, "--params");
-  const templateTags = opts.templateTags === undefined
-    ? undefined : parseParameterObject(opts.templateTags, "--template-tags");
+  if (opts.params !== undefined && opts.paramsFile !== undefined) {
+    throw new Error("--params and --params-file cannot be combined.");
+  }
+  if (opts.templateTags !== undefined && opts.templateTagsFile !== undefined) {
+    throw new Error("--template-tags and --template-tags-file cannot be combined.");
+  }
+  const params = opts.paramsFile !== undefined
+    ? await readJsonInput(opts.paramsFile, "Parameter JSON input")
+    : opts.params === undefined ? undefined : parseParameterObject(opts.params, "--params");
+  const templateTags = opts.templateTagsFile !== undefined
+    ? await readJsonInput(opts.templateTagsFile, "Template tag JSON input")
+    : opts.templateTags === undefined ? undefined : parseParameterObject(opts.templateTags, "--template-tags");
   const client = createApiClient(opts);
 
   let body: any = { ignore_cache: false };
@@ -128,7 +142,9 @@ export function registerCardRunCommand(parent: Command): void {
     .command("run <card-id>")
     .description("Execute a saved card/question")
     .option("--params <json>", "Parameters as JSON key-value pairs")
+    .option("--params-file <path>", "Read parameter JSON from a file, or - for stdin")
     .option("--template-tags <json>", "Template tag parameters as JSON key-value pairs (for native queries)")
+    .option("--template-tags-file <path>", "Read template tag JSON from a file, or - for stdin")
     .option("--limit <n>", "Max rows to display from the response (local slice)", (v) => parsePositiveInteger(v, "Limit"), 100)
     .option("--offset <n>", "Rows to skip locally; each invocation submits the query again", (v) => parseNonNegativeInteger(v, "Offset"), 0)
     .action(async function (this: Command, cardId: string) {

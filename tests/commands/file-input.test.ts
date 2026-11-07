@@ -40,7 +40,10 @@ beforeEach(async () => {
       if (req.url === "/api/card/42" && req.method === "GET") {
         res.end(JSON.stringify({
           id: 42, name: "Existing", display: "table", visualization_settings: {},
-          dataset_query: { type: "native", database: 1, native: { query: "SELECT 1" } },
+          parameters: [{ id: "region-param", slug: "region", type: "category", target: ["variable", ["template-tag", "region"]] }],
+          dataset_query: { type: "native", database: 1, native: { query: "SELECT 1", "template-tags": {
+            region: { id: "region-tag", name: "region", type: "text" },
+          } } },
         }));
         return;
       }
@@ -53,6 +56,40 @@ beforeEach(async () => {
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   host = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+});
+
+describe("Card parameter file input", () => {
+  it("resolves parameter and template-tag JSON from files and stdin", async () => {
+    const values = { region: "中国 '$HOME' `literal`\n" };
+    const path = join(inputDir, "params.json");
+    writeFileSync(path, JSON.stringify(values));
+    for (const flag of ["--params-file", "--template-tags-file"]) {
+      for (const file of [path, "-"]) {
+        const result = await runCli(["card", "run", "42", flag, file], JSON.stringify(values));
+        expect(result.code, result.stderr).toBe(0);
+      }
+    }
+    expect(requests.filter((request) => request.method === "POST").map((request) => request.body.parameters[0].value)).toEqual(Array(4).fill(values.region));
+  });
+
+  it("rejects invalid JSON and conflicting input consumers before fetching metadata", async () => {
+    const invalid = join(inputDir, "bad-params.json");
+    writeFileSync(invalid, "null");
+    for (const [args, stdin] of [
+      [["--params-file", invalid], ""],
+      [["--template-tags-file", "-"], "[]"],
+      [["--params-file", "-", "--template-tags-file", "-"], "{}"],
+      [["--params", "{}", "--params-file", "-"], "{}"],
+      [["--template-tags", "{}", "--template-tags-file", "-"], "{}"],
+      [["--params-file", "-", "--template-tags", "{}"], "{}"],
+    ] as [string[], string][]) {
+      const result = await runCli(["card", "run", "42", ...args], stdin);
+      expect(result.code, args.join(" ")).not.toBe(0);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toMatch(/cannot be combined|must be an object/);
+    }
+    expect(requests).toHaveLength(0);
+  });
 });
 
 describe("Card SQL and payload file input", () => {
