@@ -98,11 +98,15 @@ mb collection list|view         Browse collections
 |------|-------------|
 | `--format json\|csv\|table` | Output format (default: json) |
 | `--json <fields>` | Select specific JSON fields |
-| `--jq <expr>` | JMESPath filter expression |
+| `--jmespath <expr>` | JMESPath filter expression, e.g. `'[].name'` |
+| `--jq <expr>` | Legacy alias for `--jmespath`; uses JMESPath, not jq syntax |
 | `--no-header` | Omit header in table/CSV output |
 | `--host <url>` | Override Metabase URL |
 | `--token <value>` | Override auth token |
 | `--profile <alias>` | Select a Profile for one invocation |
+
+Use only one of `--jmespath` and `--jq`. Expressions are validated before a
+request is sent, and their result is always emitted as JSON.
 
 `MB_PROFILE=<alias>` is equivalent to passing `--profile <alias>` for a single
 command. `--profile`/`MB_PROFILE` cannot be combined with `--host`, `--token`,

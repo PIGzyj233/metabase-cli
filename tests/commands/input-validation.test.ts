@@ -112,3 +112,37 @@ describe("output format validation", () => {
     }
   });
 });
+
+
+describe("JMESPath option compatibility", () => {
+  it("supports the accurate name and legacy alias while rejecting invalid syntax before requests", async () => {
+    let requests = 0;
+    const server = createServer((_req, res) => {
+      requests++;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ data: { rows: [[1], [2]], cols: [{ name: "id" }] } }));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address() as { port: number };
+    const env = { MB_HOST: `http://127.0.0.1:${address.port}`, MB_TOKEN: "mb_fake" };
+    try {
+      for (const flag of ["--jmespath", "--jq"]) {
+        const success = await runCli(["query", "SELECT 1", "--db", "1", flag, "[].id"], env);
+        expect(success.code).toBe(0);
+        expect(JSON.parse(success.stdout)).toEqual([1, 2]);
+        const invalid = await runCli(["query", "SELECT 1", "--db", "1", flag, ".[].id"], env);
+        expect(invalid.code).not.toBe(0);
+        expect(invalid.stdout).toBe("");
+        expect(invalid.stderr).toMatch(/Invalid JMESPath expression/);
+      }
+      const conflict = await runCli([
+        "query", "SELECT 1", "--db", "1", "--jq", "[].id", "--jmespath", "[].id",
+      ], env);
+      expect(conflict.code).not.toBe(0);
+      expect(conflict.stderr).toMatch(/cannot be used with/);
+      expect(requests).toBe(2);
+    } finally {
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  });
+});

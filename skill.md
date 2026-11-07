@@ -129,7 +129,11 @@ environment variables, and rejects explicit `--host`/`--token`.
 | `mb collection view <id>` | View collection contents |
 
 ### Global Flags
-All commands support: `--profile <alias>`, `--format json|csv|table` (default: json), `--json <fields>`, `--jq <jmespath-expr>`, `--no-header`.
+All commands support: `--profile <alias>`, `--format json|csv|table` (default: json), `--json <fields>`, `--jmespath <expr>`, `--no-header`.
+
+`--jq` remains a legacy alias for `--jmespath`; both use **JMESPath syntax**, such
+as `'[].name'`, not jq's `'.[].name'`. Use only one alias per invocation. Invalid
+expressions fail before a request is sent; transformed results are always JSON.
 
 `MB_PROFILE=<alias>` is equivalent to `--profile <alias>` for one invocation.
 Do not combine `--profile`/`MB_PROFILE` with `--host`, `--token`, `MB_HOST`, or
