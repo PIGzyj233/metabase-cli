@@ -7,6 +7,7 @@ import {
   saveConfig,
 } from "./config.js";
 import type { GlobalOptions, ProfileConfig } from "../types/index.js";
+import { getInvocationTransport, inheritInvocationTransport, HttpStatusError, type HttpTransport } from "./http-transport.js";
 
 export interface TokenInfo {
   token: string;
@@ -179,6 +180,7 @@ export function inheritInvocationProfile<T extends GlobalOptions>(
   delegated: T,
 ): T {
   invocationIdentities.set(delegated, resolveInvocationProfile(original));
+  inheritInvocationTransport(original, delegated);
   return delegated;
 }
 
@@ -254,20 +256,26 @@ export function getAuthHeader(
 export async function loginWithPassword(
   baseUrl: string,
   username: string,
-  password: string
+  password: string,
+  opts: GlobalOptions = {},
+  transport: HttpTransport = getInvocationTransport(opts),
 ): Promise<string> {
-  const res = await fetch(`${baseUrl}/api/session`, {
+  const res = await transport.requestJson(`${baseUrl}/api/session`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(
-      body.message || `Authentication failed (HTTP ${res.status})`
+    const body = res.body || {};
+    throw new HttpStatusError(
+      res.status,
+      body.message || `Authentication failed (HTTP ${res.status})`,
     );
   }
-  const body = await res.json();
+  const body = res.body;
+  if (!body || typeof body.id !== "string" || !body.id.trim()) {
+    throw new Error("Metabase returned no session token after login.");
+  }
   return body.id; // session token
 }
 

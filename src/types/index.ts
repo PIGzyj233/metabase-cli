@@ -23,6 +23,9 @@ export interface Config {
 }
 
 export interface GlobalOptions {
+  timeout?: number;
+  deadline?: number;
+  retries?: number;
   host?: string;
   token?: string;
   profile?: string;
