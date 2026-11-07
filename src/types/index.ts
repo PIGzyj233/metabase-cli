@@ -54,6 +54,7 @@ export interface CardCreateOptions extends GlobalOptions {
   name?: string;
   database?: string;
   sql?: string;
+  sqlFile?: string;
   display?: string;
   collection?: string;
   description?: string;
@@ -67,5 +68,6 @@ export interface CardUpdateOptions extends GlobalOptions {
   collection?: string;
   archived?: boolean;
   sql?: string;
+  sqlFile?: string;
   from?: string;
 }

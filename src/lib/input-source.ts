@@ -55,3 +55,20 @@ export async function resolveSqlInput(
   }
   return sql;
 }
+
+export function parseJsonObject(text: string, label: string): Record<string, any> {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error(`${label} must contain valid JSON.`);
+  }
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} must be an object.`);
+  }
+  return value as Record<string, any>;
+}
+
+export async function readJsonInput(path: string, label: string): Promise<Record<string, any>> {
+  return parseJsonObject(await readInputText(path, label), label);
+}

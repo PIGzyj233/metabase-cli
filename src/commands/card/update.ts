@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { Command } from "commander";
+import { readJsonInput, resolveSqlInput } from "../../lib/input-source.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import type { CardUpdateOptions } from "../../types/index.js";
@@ -41,28 +41,6 @@ function parseOptionalCollectionId(raw: string): number | string {
   throw new Error("Collection ID must be a positive integer or a 21-character NanoID.");
 }
 
-function readUpdatePatchFromFile(filePath: string): Record<string, any> {
-  let raw: string;
-  try {
-    raw = readFileSync(filePath, "utf8");
-  } catch {
-    throw new Error(`Unable to read update patch file: ${filePath}`);
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error(`Update patch file must contain valid JSON: ${filePath}`);
-  }
-
-  if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-    throw new Error("Card update JSON patch must be an object.");
-  }
-
-  return parsed as Record<string, any>;
-}
-
 function buildMutableCardBody(card: Record<string, any>): Record<string, any> {
   const body: Record<string, any> = {};
 
@@ -81,7 +59,8 @@ function hasInlinePatch(opts: CardUpdateOptions): boolean {
     opts.description !== undefined ||
     opts.collection !== undefined ||
     opts.archived === true ||
-    opts.sql !== undefined
+    opts.sql !== undefined ||
+    opts.sqlFile !== undefined
   );
 }
 
@@ -108,12 +87,17 @@ export async function handleCardUpdate(
     throw new Error("Update requires at least one patch flag or --from <file>.");
   }
 
+  // Read and validate local input before fetching the current card.
+  const patch = opts.from === undefined ? undefined : await readJsonInput(opts.from, "Card update JSON patch");
+  const sql = opts.sql !== undefined || opts.sqlFile !== undefined
+    ? await resolveSqlInput(opts.sql, opts.sqlFile, "--sql-file") : undefined;
+  const collectionId = opts.collection === undefined ? undefined : parseOptionalCollectionId(opts.collection);
   const client = createApiClient(opts);
   const currentCard = await client.get(`/api/card/${parsedCardId}`);
   const body = buildMutableCardBody(currentCard);
 
-  if (opts.from !== undefined) {
-    Object.assign(body, readUpdatePatchFromFile(opts.from));
+  if (patch !== undefined) {
+    Object.assign(body, patch);
   } else {
     if (opts.name !== undefined) {
       body.name = opts.name;
@@ -122,21 +106,21 @@ export async function handleCardUpdate(
       body.description = opts.description;
     }
     if (opts.collection !== undefined) {
-      body.collection_id = parseOptionalCollectionId(opts.collection);
+      body.collection_id = collectionId;
     }
     if (opts.archived === true) {
       body.archived = true;
     }
-    if (opts.sql !== undefined) {
+    if (sql !== undefined) {
       if (currentCard.dataset_query?.type !== "native") {
         throw new Error(
-          "Inline --sql updates only support native-query cards. Use --from for non-native cards."
+          "--sql and --sql-file updates only support native-query cards. Use --from for non-native cards."
         );
       }
       const datasetQuery = JSON.parse(JSON.stringify(body.dataset_query));
       datasetQuery.native = {
         ...(datasetQuery.native ?? {}),
-        query: opts.sql,
+        query: sql,
       };
       body.dataset_query = datasetQuery;
     }
@@ -155,7 +139,8 @@ export function registerCardUpdateCommand(parent: Command): void {
     .option("--collection <id>", "Collection ID or NanoID")
     .option("--archived", "Archive the card")
     .option("--sql <sql>", "Native SQL query text for native-query cards")
-    .option("--from <file>", "Read update patch from JSON file")
+    .option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin")
+    .option("--from <file>", "Read update patch from JSON file, or - for stdin")
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals() as CardUpdateOptions;
       try {

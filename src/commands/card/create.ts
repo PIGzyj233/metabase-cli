@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { Command } from "commander";
+import { readJsonInput, resolveSqlInput } from "../../lib/input-source.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import type { CardCreateOptions } from "../../types/index.js";
@@ -19,33 +19,12 @@ function parseOptionalCollectionId(raw: string): number | string {
   throw new Error("Collection ID must be a positive integer or a 21-character NanoID.");
 }
 
-function readCreateBodyFromFile(filePath: string): Record<string, any> {
-  let raw: string;
-  try {
-    raw = readFileSync(filePath, "utf8");
-  } catch {
-    throw new Error(`Unable to read create payload file: ${filePath}`);
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error(`Create payload file must contain valid JSON: ${filePath}`);
-  }
-
-  if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
-    throw new Error("Card create JSON payload must be an object.");
-  }
-
-  return parsed as Record<string, any>;
-}
-
 export async function handleCardCreate(opts: CardCreateOptions): Promise<any> {
   const inlineFlags: Array<keyof CardCreateOptions> = [
     "name",
     "database",
     "sql",
+    "sqlFile",
     "display",
     "collection",
     "description",
@@ -57,13 +36,14 @@ export async function handleCardCreate(opts: CardCreateOptions): Promise<any> {
     if (inlineFlags.some((flag) => opts[flag] !== undefined)) {
       throw new Error("--from cannot be combined with inline create flags.");
     }
-    body = readCreateBodyFromFile(opts.from);
+    body = await readJsonInput(opts.from, "Card create JSON payload");
   } else {
-    if (!opts.name || !opts.database || !opts.sql) {
-      throw new Error("Inline mode requires --name, --database, and --sql.");
+    if (!opts.name || !opts.database || (opts.sql === undefined && opts.sqlFile === undefined)) {
+      throw new Error("Inline mode requires --name, --database, and --sql or --sql-file.");
     }
 
     const databaseId = parseRequiredId(opts.database, "Database ID");
+    const sql = await resolveSqlInput(opts.sql, opts.sqlFile, "--sql-file");
     body = {
       name: opts.name,
       display: opts.display ?? "table",
@@ -73,7 +53,7 @@ export async function handleCardCreate(opts: CardCreateOptions): Promise<any> {
         type: "native",
         database: databaseId,
         native: {
-          query: opts.sql,
+          query: sql,
         },
       },
     };
@@ -97,11 +77,12 @@ export function registerCardCreateCommand(parent: Command): void {
     .option("--name <name>", "Card name")
     .option("--database <id>", "Database ID for inline native SQL mode")
     .option("--sql <sql>", "Native SQL query text for inline mode")
+    .option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin")
     .option("--display <type>", "Card display type")
     .option("--collection <id>", "Collection ID or NanoID")
     .option("--description <text>", "Card description")
     .option("--type <type>", "Card type")
-    .option("--from <file>", "Read full create payload from JSON file")
+    .option("--from <file>", "Read full create payload from JSON file, or - for stdin")
     .action(async function (this: Command) {
       const opts = this.optsWithGlobals() as CardCreateOptions;
       try {

@@ -37,11 +37,72 @@ beforeEach(async () => {
     req.on("end", () => {
       requests.push({ method: req.method, url: req.url, body: body ? JSON.parse(body) : null });
       res.setHeader("Content-Type", "application/json");
+      if (req.url === "/api/card/42" && req.method === "GET") {
+        res.end(JSON.stringify({
+          id: 42, name: "Existing", display: "table", visualization_settings: {},
+          dataset_query: { type: "native", database: 1, native: { query: "SELECT 1" } },
+        }));
+        return;
+      }
+      if (req.url === "/api/card" || (req.url === "/api/card/42" && req.method === "PUT")) {
+        res.end(JSON.stringify({ id: 42, ...JSON.parse(body) }));
+        return;
+      }
       res.end(JSON.stringify({ data: { rows: [[1]], cols: [{ name: "id" }] } }));
     });
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   host = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+});
+
+describe("Card SQL and payload file input", () => {
+  it("creates and updates Cards from SQL files or stdin without changing literal text", async () => {
+    const sql = "SELECT '$HOME', '`literal`'\nFROM orders;\n";
+    const path = join(inputDir, "card.sql");
+    writeFileSync(path, sql);
+    for (const file of [path, "-"]) {
+      const created = await runCli(["card", "create", "--name", "Report", "--database", "1", "--sql-file", file], sql);
+      expect(created.code, created.stderr).toBe(0);
+      expect(JSON.parse(created.stdout)[0].dataset_query.native.query).toBe(sql);
+      const updated = await runCli(["card", "update", "42", "--sql-file", file], sql);
+      expect(updated.code, updated.stderr).toBe(0);
+      expect(JSON.parse(updated.stdout)[0].dataset_query.native.query).toBe(sql);
+    }
+    expect(requests.filter((request) => request.method !== "GET").map((request) => request.body.dataset_query.native.query)).toEqual([sql, sql, sql, sql]);
+  });
+
+  it("creates and patches Cards using JSON stdin", async () => {
+    const payload = {
+      name: "Imported", display: "table", visualization_settings: {},
+      dataset_query: { type: "native", database: 1, native: { query: "SELECT '$HOME'" } },
+    };
+    const created = await runCli(["card", "create", "--from", "-"], JSON.stringify(payload));
+    expect(created.code, created.stderr).toBe(0);
+    expect(requests[0].body).toEqual(payload);
+    const updated = await runCli(["card", "update", "42", "--from", "-"], JSON.stringify({ name: "Renamed" }));
+    expect(updated.code, updated.stderr).toBe(0);
+    expect(requests[2].body).toMatchObject({ name: "Renamed", dataset_query: { native: { query: "SELECT 1" } } });
+  });
+
+  it("rejects malformed payloads and multiple sources before even fetching a Card", async () => {
+    const invalid = join(inputDir, "invalid.json");
+    writeFileSync(invalid, "{");
+    for (const [args, stdin] of [
+      [["card", "create", "--from", "-"], "[]"],
+      [["card", "update", "42", "--from", "-"], "{"],
+      [["card", "update", "42", "--from", invalid], ""],
+      [["card", "update", "42", "--sql", "SELECT 1", "--sql-file", "-"], "SELECT 2"],
+      [["card", "update", "42", "--from", "-", "--sql-file", "-"], "{}"],
+      [["card", "create", "--from", "-", "--sql-file", "-"], "{}"],
+      [["card", "create", "--name", "Report", "--database", "1", "--sql", "SELECT 1", "--sql-file", "-"], "SELECT 2"],
+    ] as [string[], string][]) {
+      const result = await runCli(args, stdin);
+      expect(result.code, args.join(" ")).not.toBe(0);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toMatch(/cannot be combined|must be an object|must contain valid JSON/);
+    }
+    expect(requests).toHaveLength(0);
+  });
 });
 
 afterEach(async () => {
