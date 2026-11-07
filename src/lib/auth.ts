@@ -143,6 +143,37 @@ export function resolveProfile(opts: GlobalOptions): ResolvedIdentity | null {
   return null;
 }
 
+// A command reuses one options object for its request and output. Retain the
+// selected identity even if another process changes the Active Profile meanwhile.
+const invocationIdentities = new WeakMap<GlobalOptions, ResolvedIdentity | null>();
+
+export function resolveInvocationProfile(opts: GlobalOptions): ResolvedIdentity | null {
+  if (!invocationIdentities.has(opts)) {
+    invocationIdentities.set(opts, resolveProfile(opts));
+  }
+  return invocationIdentities.get(opts) ?? null;
+}
+
+export function renewProfileToken(
+  identity: ResolvedProfile,
+  token: string,
+  username: string,
+): void {
+  const config = loadConfig();
+  const profile = config.profiles?.[identity.sourceId];
+  if (!profile || profile.instance !== identity.baseUrl ||
+      profile.token !== identity.tokenInfo.token || profile.username !== identity.username) {
+    throw new Error(`Profile '${identity.sourceId}' changed during session renewal. Retry the command.`);
+  }
+  config.profiles![identity.sourceId] = {
+    ...profile,
+    token,
+    token_type: "session",
+    username,
+  };
+  saveConfig(config);
+}
+
 export function resolveToken(opts: GlobalOptions): TokenInfo | null {
   // Priority 1: CLI --token
   if (opts.token) {

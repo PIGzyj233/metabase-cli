@@ -1,9 +1,8 @@
 import {
   getAuthHeader,
   loginWithPassword,
-  storeToken,
-  resolveProfile,
-  type TokenInfo,
+  renewProfileToken,
+  resolveInvocationProfile,
 } from "./auth.js";
 import { humanizeQueryError } from "./error-message.js";
 import type { GlobalOptions } from "../types/index.js";
@@ -26,7 +25,7 @@ export interface ApiClient {
 }
 
 export function createApiClient(opts: GlobalOptions): ApiClient {
-  const identity = resolveProfile(opts);
+  const identity = resolveInvocationProfile(opts);
   if (!identity) {
     throw new ApiError(0, "No Metabase host configured. Set MB_HOST or run 'mb auth login'.");
   }
@@ -57,34 +56,19 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
       // Try auto-renewal
       const username = process.env.MB_USERNAME ?? "";
       const password = process.env.MB_PASSWORD ?? "";
-      if (username && password) {
+      if (username && password && resolvedIdentity.tokenInfo.type === "session") {
+        if (resolvedIdentity.kind === "profile" && resolvedIdentity.username &&
+            resolvedIdentity.username !== username) {
+          throw new ApiError(401,
+            `MB_USERNAME does not match Profile '${resolvedIdentity.sourceId}'. Run 'mb auth login' for this Profile.`);
+        }
         const newToken = await loginWithPassword(baseUrl, username, password);
         if (resolvedIdentity.kind === "profile") {
-          const protocol = new URL(baseUrl).protocol.replace(":", "");
-          storeToken(resolvedIdentity.hostKey, protocol, newToken, "session", username);
+          renewProfileToken(resolvedIdentity, newToken, username);
+          resolvedIdentity.username = username;
         }
-        // Retry with new token
-        const retryTokenInfo: TokenInfo = { token: newToken, type: "session" };
-        const retryHeaders: Record<string, string> = {
-          "Content-Type": "application/json",
-          ...getAuthHeader(retryTokenInfo),
-        };
-        const retryRes = await fetch(url, {
-          method,
-          headers: retryHeaders,
-          body: body ? JSON.stringify(body) : undefined,
-        });
-        if (!retryRes.ok) {
-          const retryBody = await retryRes.json().catch(() => ({}));
-          throw new ApiError(
-            retryRes.status,
-            humanizeQueryError(retryBody.message || `HTTP ${retryRes.status}`)
-          );
-        }
-        if (retryRes.status === 204) {
-          return null;
-        }
-        return retryRes.json();
+        resolvedIdentity.tokenInfo = { token: newToken, type: "session" };
+        return request(method, path, body, true);
       }
       throw new ApiError(
         401,
