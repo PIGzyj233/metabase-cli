@@ -86,7 +86,7 @@ describe("Card parameter file input", () => {
       const result = await runCli(["card", "run", "42", ...args], stdin);
       expect(result.code, args.join(" ")).not.toBe(0);
       expect(result.stdout).toBe("");
-      expect(result.stderr).toMatch(/cannot be combined|must be an object/);
+      expect(result.stderr).toMatch(/cannot be combined|cannot be used with|must be an object/);
     }
     expect(requests).toHaveLength(0);
   });
@@ -148,7 +148,7 @@ describe("Card SQL and payload file input", () => {
       const result = await runCli(args, stdin);
       expect(result.code, args.join(" ")).not.toBe(0);
       expect(result.stdout).toBe("");
-      expect(result.stderr).toMatch(/cannot be combined|must be an object|must contain valid JSON/);
+      expect(result.stderr).toMatch(/cannot be combined|cannot be used with|must be an object|must contain valid JSON/);
     }
     expect(requests).toHaveLength(0);
   });

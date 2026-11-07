@@ -84,12 +84,13 @@ export function registerCardCreateCommand(parent: Command): void {
     .option("--database <id>", "Database ID for inline native SQL mode")
     .addOption(new Option("--db <id>", "Alias for --database").conflicts("database"))
     .option("--sql <sql>", "Native SQL query text for inline mode")
-    .option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin")
+    .addOption(new Option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin").conflicts("sql"))
     .option("--display <type>", "Card display type")
     .option("--collection <id>", "Collection ID or NanoID")
     .option("--description <text>", "Card description")
     .option("--type <type>", "Card type")
-    .option("--from <file>", "Read full create payload from JSON file, or - for stdin")
+    .addOption(new Option("--from <file>", "Read full create payload from JSON file, or - for stdin")
+      .conflicts(["name", "database", "db", "sql", "sqlFile", "display", "collection", "description", "type"]))
     .action(async function (this: Command) {
       const opts = this.optsWithGlobals() as CardCreateOptions;
       try {

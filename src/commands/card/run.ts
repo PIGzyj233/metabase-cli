@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { parsePositiveInteger, parseNonNegativeInteger, validatePagination } from "../../lib/input-validation.js";
 import { readJsonInput } from "../../lib/input-source.js";
 import { createApiClient } from "../../lib/api-client.js";
@@ -142,9 +142,11 @@ export function registerCardRunCommand(parent: Command): void {
     .command("run <card-id>")
     .description("Execute a saved card/question")
     .option("--params <json>", "Parameters as JSON key-value pairs")
-    .option("--params-file <path>", "Read parameter JSON from a file, or - for stdin")
-    .option("--template-tags <json>", "Template tag parameters as JSON key-value pairs (for native queries)")
-    .option("--template-tags-file <path>", "Read template tag JSON from a file, or - for stdin")
+    .addOption(new Option("--params-file <path>", "Read parameter JSON from a file, or - for stdin").conflicts("params"))
+    .addOption(new Option("--template-tags <json>", "Template tag parameters as JSON key-value pairs (for native queries)")
+      .conflicts(["params", "paramsFile"]))
+    .addOption(new Option("--template-tags-file <path>", "Read template tag JSON from a file, or - for stdin")
+      .conflicts(["params", "paramsFile", "templateTags"]))
     .option("--limit <n>", "Max rows to display from the response (local slice)", (v) => parsePositiveInteger(v, "Limit"), 100)
     .option("--offset <n>", "Rows to skip locally; each invocation submits the query again", (v) => parseNonNegativeInteger(v, "Offset"), 0)
     .action(async function (this: Command, cardId: string) {

@@ -1,4 +1,4 @@
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { readJsonInput, resolveSqlInput } from "../../lib/input-source.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
@@ -139,8 +139,9 @@ export function registerCardUpdateCommand(parent: Command): void {
     .option("--collection <id>", "Collection ID or NanoID")
     .option("--archived", "Archive the card")
     .option("--sql <sql>", "Native SQL query text for native-query cards")
-    .option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin")
-    .option("--from <file>", "Read update patch from JSON file, or - for stdin")
+    .addOption(new Option("--sql-file <path>", "Read native SQL from a UTF-8 file, or - for stdin").conflicts("sql"))
+    .addOption(new Option("--from <file>", "Read update patch from JSON file, or - for stdin")
+      .conflicts(["name", "description", "collection", "archived", "sql", "sqlFile"]))
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals() as CardUpdateOptions;
       try {
