@@ -4,6 +4,7 @@ import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import { resolveCommandOutputOptions } from "../../lib/output-options.js";
 import { handleCommandError } from "../../lib/errors.js";
+import { CliError } from "../../lib/cli-error.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export async function handleAuthCheck(opts: GlobalOptions) {
@@ -12,11 +13,7 @@ export async function handleAuthCheck(opts: GlobalOptions) {
   const response = await client.get("/api/database");
   const databases = response?.data ?? response;
   if (!Array.isArray(databases)) {
-    throw Object.assign(new Error("Metabase returned an invalid database listing during authentication check."), {
-      code: "INVALID_RESPONSE",
-      retryable: false,
-      hint: "Check the instance URL and Metabase API compatibility.",
-    });
+    throw new CliError("INVALID_RESPONSE", "Metabase returned an invalid database listing during authentication check.", "Check the instance URL and Metabase API compatibility.");
   }
   return {
     reachable: true,

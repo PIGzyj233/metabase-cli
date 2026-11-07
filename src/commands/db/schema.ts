@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
+import { CliError } from "../../lib/cli-error.js";
 import { handleCommandError, parseRequiredId, resolveOutputOptions, type DbCommandOptions } from "./common.js";
 
 interface SchemaOptions extends DbCommandOptions {
@@ -32,7 +33,7 @@ function selectTables(tables: MetadataTable[], opts: SchemaOptions): MetadataTab
   if (opts.tables === undefined) return candidates;
   const selectors = opts.tables.split(",").map((selector) => selector.trim());
   if (selectors.some((selector) => selector === "")) {
-    throw new Error("--tables must contain comma-separated table names, schema-qualified names, or IDs.");
+    throw new CliError("INVALID_INPUT", "--tables must contain comma-separated table names, schema-qualified names, or IDs.", "Remove empty selectors from --tables.");
   }
   const selected = new Set<number>();
   for (const selector of selectors) {
@@ -40,8 +41,8 @@ function selectTables(tables: MetadataTable[], opts: SchemaOptions): MetadataTab
       String(table.id) === selector || table.name === selector ||
       (table.schema != null && `${table.schema}.${table.name}` === selector),
     );
-    if (matches.length === 0) throw new Error(`Unknown table '${selector}'. Use 'mb db tables' to list accessible tables.`);
-    if (matches.length > 1) throw new Error(`Ambiguous table '${selector}'. Use a table ID or --schema to select one table.`);
+    if (matches.length === 0) throw new CliError("INVALID_INPUT", `Unknown table '${selector}'.`, "Use 'mb db tables' to list accessible tables.");
+    if (matches.length > 1) throw new CliError("INVALID_INPUT", `Ambiguous table '${selector}'.`, "Use a table ID or --schema to select one table.");
     selected.add(matches[0].id);
   }
   return candidates.filter((table) => selected.has(table.id));
@@ -50,12 +51,12 @@ function selectTables(tables: MetadataTable[], opts: SchemaOptions): MetadataTab
 export async function handleDbSchema(dbId: number, opts: SchemaOptions) {
   const databaseId = parseRequiredId(String(dbId), "Database ID");
   if (opts.tables !== undefined && opts.tables.split(",").some((name) => !name.trim())) {
-    throw new Error("--tables must contain comma-separated table names, schema-qualified names, or IDs.");
+    throw new CliError("INVALID_INPUT", "--tables must contain comma-separated table names, schema-qualified names, or IDs.", "Remove empty selectors from --tables.");
   }
   const client = createApiClient(opts);
   const metadata = await client.get(`/api/database/${databaseId}/metadata`);
   if (!metadata || !Array.isArray(metadata.tables)) {
-    throw new Error("Metabase returned invalid database metadata: expected a tables array.");
+    throw new CliError("INVALID_RESPONSE", "Metabase returned invalid database metadata: expected a tables array.", "Check the instance URL and Metabase API compatibility.");
   }
   const allTables = metadata.tables as MetadataTable[];
   const targets = new Map<number, { table: MetadataTable; field: MetadataField }>();

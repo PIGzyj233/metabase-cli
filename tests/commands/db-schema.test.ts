@@ -48,8 +48,8 @@ describe("compact database schema", () => {
 
   it("reports unknown tables and malformed payloads instead of claiming empty results", async () => {
     mockFetch([{ status: 200, body: metadata }, { status: 200, body: {} }]);
-    await expect(handleDbSchema(1, { ...identity, tables: "missing" })).rejects.toThrow(/Unknown table/);
-    await expect(handleDbSchema(1, identity)).rejects.toThrow(/invalid database metadata/);
+    await expect(handleDbSchema(1, { ...identity, tables: "missing" })).rejects.toMatchObject({ code: "INVALID_INPUT", message: expect.stringMatching(/Unknown table/) });
+    await expect(handleDbSchema(1, identity)).rejects.toMatchObject({ code: "INVALID_RESPONSE", message: expect.stringMatching(/invalid database metadata/) });
   });
 
   it("rejects malformed selectors before requesting metadata", async () => {
