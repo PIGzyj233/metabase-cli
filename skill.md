@@ -195,7 +195,11 @@ mb card delete 123 --hard-delete
 - Duplicate query column names receive collision-free numeric suffixes:
   `id, id, id_2` becomes `id, id_3, id_2`. Use explicit SQL aliases when possible.
 - Every JSON record carries `_source`: the Profile alias, or the Host key for
-  bare override calls
+  bare override calls. `--json` retains it. Conflicting business columns are
+  preserved under a free suffix such as `_source_2`.
+- Explicit JMESPath expressions own their output shape and may omit `_source`
+  or return scalars. Include `_source` in projections used to merge sources.
+  An unauthenticated `auth status` has no source to attribute.
 - stderr includes `// Source: <alias-or-host-key> (<url>)`
 - Pagination info goes to stderr, e.g.: `// Showing rows 1-100 of 1523`
 - Errors go to stderr with exit code 1 and are prefixed with `[source]`

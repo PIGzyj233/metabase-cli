@@ -43,10 +43,17 @@ export function withSourceAttribution(
   if (sourceId.trim() === "") {
     throw new Error("Source attribution requires a non-empty source id.");
   }
-  return data.map((row) => ({
-    _source: sourceId,
-    ...row,
-  }));
+  const fieldSet = new Set<string>();
+  for (const row of data) {
+    for (const field of Object.keys(row)) fieldSet.add(field);
+  }
+  const fields = [...fieldSet];
+  const attributedNames = uniqueFieldNames(fields, ["_source"]);
+  const names = new Map(fields.map((field, i) => [field, attributedNames[i]]));
+  return data.map((row) => Object.fromEntries([
+    ["_source", sourceId],
+    ...Object.entries(row).map(([field, value]) => [names.get(field)!, value]),
+  ]));
 }
 
 export function applyJsonFieldSelection(
@@ -55,11 +62,12 @@ export function applyJsonFieldSelection(
 ): Record<string, any>[] {
   const fieldList = fields.split(",").map((f) => f.trim());
   return data.map((row) => {
-    const obj: Record<string, any> = {};
-    for (const f of fieldList) {
-      if (f in row) obj[f] = row[f];
-    }
-    return obj;
+    const selected = Object.hasOwn(row, "_source")
+      ? ["_source", ...fieldList.filter((field) => field !== "_source")]
+      : fieldList;
+    return Object.fromEntries(selected
+      .filter((field) => Object.hasOwn(row, field))
+      .map((field) => [field, row[field]]));
   });
 }
 
@@ -143,7 +151,8 @@ export function output(
   // Apply --jq (JMESPath)
   if (opts.jq) {
     processed = applyJmesPath(processed, opts.jq);
-    // After jq, always output as JSON regardless of format
+    // Explicit expressions own the result shape, including scalars or objects
+    // without _source. Always output that result as JSON regardless of format.
     process.stdout.write(formatJson(processed) + "\n");
   } else {
     const format = opts.format || "json";

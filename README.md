@@ -114,7 +114,11 @@ reports truncation, stderr warns that omitted rows cannot be recovered with
 - Duplicate query column names get deterministic numeric suffixes without
   overwriting real column names: `id, id, id_2` becomes `id, id_3, id_2`.
 - Every JSON record includes `_source`: the Profile alias, or the Host key for
-  bare override calls
+  bare override calls. `--json` retains it. A business column named `_source` is
+  preserved under a free suffix such as `_source_2`.
+- Explicit JMESPath expressions control the output shape, including scalars or
+  objects without `_source`. Include `_source` in projections when merging data.
+  An unauthenticated `auth status` has no source to attribute.
 - stderr includes `// Source: <alias-or-host-key> (<url>)`
 - Pagination info goes to stderr: `// Showing rows 1-100 of 1523`
 - Errors go to stderr with exit code 1 and are prefixed with `[source]`

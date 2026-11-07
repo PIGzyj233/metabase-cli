@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   formatJson,
   formatCsv,
@@ -22,6 +22,8 @@ const sampleCols = [
 ];
 
 describe("formatter", () => {
+  afterEach(() => vi.restoreAllMocks());
+
   describe("formatQueryResult", () => {
     it("converts rows+cols to array of objects", () => {
       const result = formatQueryResult(sampleRows, sampleCols);
@@ -89,10 +91,41 @@ describe("formatter", () => {
         "// Source: customer-a (https://mb.customer-a.test)"
       );
     });
+
+    it("keeps provenance after field selection while preserving a business _source", () => {
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      output([{ id: 1, _source: "business value" }], {
+        sourceId: "customer-a",
+        json: "id,_source_2",
+      });
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual([
+        { _source: "customer-a", id: 1, _source_2: "business value" },
+      ]);
+    });
+
+    it("preserves trusted inventory sources when no invocation source is supplied", () => {
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      output([{ _source: "a", alias: "a" }, { _source: "b", alias: "b" }], {
+        json: "alias",
+      });
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual([
+        { _source: "a", alias: "a" }, { _source: "b", alias: "b" },
+      ]);
+    });
+
+    it.each([
+      ["[].id", [1]],
+      ["length(@)", 1],
+      ["[].{id: id}", [{ id: 1 }]],
+    ])("allows explicit JMESPath result shape: %s", (jq, expected) => {
+      const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      output([{ id: 1 }], { sourceId: "customer-a", jq: String(jq) });
+      expect(JSON.parse(String(stdout.mock.calls[0][0]))).toEqual(expected);
+    });
   });
 
   describe("withSourceAttribution", () => {
-    it("adds a non-empty _source without overwriting existing values", () => {
+    it("reserves _source and retains a conflicting business value under a unique name", () => {
       expect(
         withSourceAttribution(
           [{ id: 1 }, { id: 2, _source: "preserved" }],
@@ -100,12 +133,22 @@ describe("formatter", () => {
         )
       ).toEqual([
         { id: 1, _source: "customer-a" },
-        { id: 2, _source: "preserved" },
+        { id: 2, _source: "customer-a", _source_2: "preserved" },
       ]);
       expect(withSourceAttribution([], "customer-a")).toEqual([]);
       expect(() => withSourceAttribution([{ id: 1 }], "")).toThrow(
         /non-empty/
       );
+    });
+
+    it("uses a consistent collision-free source column across rows", () => {
+      expect(withSourceAttribution([
+        { _source: null, _source_2: "first" },
+        { _source: "second", _source_3: "third" },
+      ], "actual")).toEqual([
+        { _source: "actual", _source_4: null, _source_2: "first" },
+        { _source: "actual", _source_4: "second", _source_3: "third" },
+      ]);
     });
   });
 
@@ -120,6 +163,14 @@ describe("formatter", () => {
         { id: 1, name: "Alice" },
         { id: 2, name: "Bob" },
       ]);
+    });
+
+    it("selects only own fields and safely retains prototype-like names", () => {
+      const [row] = formatQueryResult([["value"]], [{ name: "__proto__" }]);
+      const [selected] = applyJsonFieldSelection([row], "__proto__,constructor");
+      expect(Object.keys(selected)).toEqual(["__proto__"]);
+      expect(JSON.stringify(selected)).toBe('{"__proto__":"value"}');
+      expect(Object.getPrototypeOf(selected)).toBe(Object.prototype);
     });
   });
 
