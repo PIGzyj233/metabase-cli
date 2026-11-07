@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { handleCommandError } from "../../lib/errors.js";
+import { outputOperationResult, type OperationResult } from "../../lib/operation-result.js";
 import { loadConfig, saveConfig } from "../../lib/config.js";
 
-export function handleAuthUse(alias: string): void {
+export function handleAuthUse(alias: string): OperationResult {
   const config = loadConfig();
   if (!config.profiles?.[alias]) {
     const known = Object.keys(config.profiles ?? {});
@@ -19,6 +20,8 @@ export function handleAuthUse(alias: string): void {
     current_host: null,
   });
   process.stderr.write(`Active Profile set to ${alias}.\n`);
+  return { sourceId: alias, sourceUrl: config.profiles[alias].instance,
+    record: { operation: "use", ok: true, profile: alias, status: "active" } };
 }
 
 export function registerAuthUseCommand(parent: Command): void {
@@ -27,7 +30,7 @@ export function registerAuthUseCommand(parent: Command): void {
     .description("Set the Active Profile")
     .action(function (this: Command, alias: string) {
       try {
-        handleAuthUse(alias);
+        outputOperationResult(handleAuthUse(alias), this.optsWithGlobals());
       } catch (error: any) {
         handleCommandError(error, this.optsWithGlobals(), { resolveSource: false, sourceId: alias });
       }

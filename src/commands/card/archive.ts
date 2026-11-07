@@ -1,4 +1,6 @@
 import { Command } from "commander";
+import { output } from "../../lib/formatter.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
 import { inheritInvocationProfile } from "../../lib/auth.js";
 import type { GlobalOptions } from "../../types/index.js";
 import { parseRequiredId, handleCommandError } from "../db/common.js";
@@ -21,6 +23,7 @@ export function registerCardArchiveCommand(parent: Command): void {
       const opts = this.optsWithGlobals() as GlobalOptions;
       try {
         const result = await handleCardArchive(cardId, opts);
+        output([{ operation: "archive", ok: true, id: result.id, status: result.mode }], resolveCommandOutputOptions(opts));
         process.stderr.write(`Archived card ${result.id}.\n`);
       } catch (error) {
         handleCommandError(error, opts);

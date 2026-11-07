@@ -1,8 +1,11 @@
 import { Command } from "commander";
 import { handleCommandError } from "../../lib/errors.js";
+import { getInvocationTransport } from "../../lib/http-transport.js";
+import { outputOperationResult, type OperationResult } from "../../lib/operation-result.js";
+import type { GlobalOptions } from "../../types/index.js";
 import { loadConfig, saveConfig } from "../../lib/config.js";
 
-export async function handleAuthRm(alias: string): Promise<void> {
+export async function handleAuthRm(alias: string, opts: GlobalOptions = {}): Promise<OperationResult> {
   const config = loadConfig();
   const profile = config.profiles?.[alias];
   if (!profile) {
@@ -12,13 +15,16 @@ export async function handleAuthRm(alias: string): Promise<void> {
     );
   }
 
+  let revokeStatus: "revoked" | "failed" | "not_applicable" = "not_applicable";
   if (profile.token_type === "session") {
     try {
-      await fetch(`${profile.instance}/api/session`, {
+      const response = await getInvocationTransport(opts).requestJson(`${profile.instance}/api/session`, {
         method: "DELETE",
         headers: { "X-Metabase-Session": profile.token },
       });
+      revokeStatus = response.ok ? "revoked" : "failed";
     } catch {
+      revokeStatus = "failed";
       // Best effort: local removal still wins.
     }
   }
@@ -35,6 +41,8 @@ export async function handleAuthRm(alias: string): Promise<void> {
     current_host: null,
   });
   process.stderr.write(`Removed Profile ${alias}.\n`);
+  return { sourceId: alias, sourceUrl: profile.instance, record: { operation: "rm", ok: true, profile: alias,
+    status: "removed", session_revoked: revokeStatus === "revoked", revoke_status: revokeStatus } };
 }
 
 export function registerAuthRmCommand(parent: Command): void {
@@ -43,7 +51,8 @@ export function registerAuthRmCommand(parent: Command): void {
     .description("Remove a saved Profile")
     .action(async function (this: Command, alias: string) {
       try {
-        await handleAuthRm(alias);
+        const opts = this.optsWithGlobals();
+        outputOperationResult(await handleAuthRm(alias, opts), opts);
       } catch (error: any) {
         handleCommandError(error, this.optsWithGlobals(), { resolveSource: false, sourceId: alias });
       }
