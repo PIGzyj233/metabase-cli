@@ -22,6 +22,8 @@ describe("machine command schema", () => {
     expect(schema.command.arguments).toContainEqual(expect.objectContaining({ name: "card-id", type: "integer", required: true }));
     expect(schema.command.options).toContainEqual(expect.objectContaining({ name: "limit", type: "integer", default: 100 }));
     expect(schema.command.options).toContainEqual(expect.objectContaining({ name: "errorFormat", inherited_from: "mb", enum: ["text", "json"] }));
+    expect(schema.command.options).toContainEqual(expect.objectContaining({ name: "timeout", type: "integer", default: 30000, environment: "MB_TIMEOUT" }));
+    expect(schema.command.options).toContainEqual(expect.objectContaining({ name: "format", default: "json" }));
     expect(schema.command.effect).toBe("execute");
     expect(schema.command.mutates).toBe(true);
     expect(schema.command.output_schema.$ref).toBe("#/definitions/records");

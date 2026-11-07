@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { registerHttpOptions } from "./lib/http-transport.js";
 import { registerSchemaCommand } from "./lib/command-schema.js";
 import { CliError } from "./lib/cli-error.js";
 import { handleCommandError } from "./lib/errors.js";
@@ -44,9 +45,9 @@ export function createProgram(): Command {
   program.option("--token <value>", "Override authentication token");
   program.option("--profile <alias>", "Select a named Profile for this invocation");
   program.addOption(new Option("--format <type>", "Output format: json, csv, table")
-    .choices(["json", "csv", "table"]).env("MB_FORMAT"));
+    .choices(["json", "csv", "table"]).env("MB_FORMAT").default("json"));
   program.addOption(new Option("--error-format <type>", "Error output format: text or json")
-    .choices(["text", "json"]).env("MB_ERROR_FORMAT"));
+    .choices(["text", "json"]).env("MB_ERROR_FORMAT").default("text"));
   program.option("--json <fields>", "Select specific fields in JSON output");
   program.addOption(new Option("--jmespath <expr>", "Filter JSON output with a JMESPath expression")
     .argParser(parseJmesPathExpression).conflicts("jq"));
@@ -56,6 +57,8 @@ export function createProgram(): Command {
     if (expression !== undefined) program.setOptionValue("jq", expression);
   });
   program.option("--no-header", "Omit header row in table/CSV output");
+
+  registerHttpOptions(program);
 
   // Auth commands
   const authCmd = program.command("auth").description("Manage authentication");

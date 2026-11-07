@@ -14,12 +14,15 @@ Metabase CLI — query data from the terminal
 | --host <url> | Override Metabase server URL |  |
 | --token <value> | Override authentication token |  |
 | --profile <alias> | Select a named Profile for this invocation |  |
-| --format <type> | Output format: json, csv, table | MB_FORMAT |
-| --error-format <type> | Error output format: text or json | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) |  |
 | --no-header | Omit header row in table/CSV output | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) | 2 / MB_RETRIES |
 | -h, --help | display help for command |  |
 
 Effect: **inspect**. May modify state: **false**.
@@ -35,12 +38,15 @@ Manage authentication
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
@@ -60,12 +66,15 @@ Login to Metabase
 | -V, --version | output the version number (global) |  |
 | --host <url> | Override Metabase server URL (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **authenticate**. May modify state: **true**.
 
@@ -86,12 +95,15 @@ List saved Profiles
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
@@ -101,7 +113,7 @@ mb auth list
 
 ## mb auth logout
 
-Logout from Metabase
+Revoke a server session while retaining its local Profile
 
 | Option | Description | Default / environment |
 | --- | --- | --- |
@@ -110,12 +122,15 @@ Logout from Metabase
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **write**. May modify state: **true**.
 
@@ -138,12 +153,15 @@ Remove a saved Profile
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **write**. May modify state: **true**.
 
@@ -162,12 +180,15 @@ Show current authentication status
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
@@ -190,12 +211,15 @@ Set the Active Profile
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **local-write**. May modify state: **true**.
 
@@ -214,12 +238,15 @@ Database metadata operations
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
@@ -234,12 +261,15 @@ List all databases
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -262,12 +292,15 @@ List schemas in a database
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -291,12 +324,15 @@ List tables in a database
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -319,12 +355,15 @@ List fields of a table
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -347,12 +386,15 @@ Full database metadata dump
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -378,12 +420,15 @@ Execute a native SQL query
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **execute**. May modify state: **true**.
 
@@ -405,12 +450,15 @@ Saved cards/questions
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
@@ -426,12 +474,15 @@ List saved cards/questions
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -458,12 +509,15 @@ Create a saved card/question
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **write**. May modify state: **true**.
 
@@ -494,12 +548,15 @@ Update a saved card/question
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **write**. May modify state: **true**.
 
@@ -525,12 +582,15 @@ Delete a saved card/question
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **write**. May modify state: **true**.
 
@@ -555,12 +615,15 @@ Archive a saved card/question
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **write**. May modify state: **true**.
 
@@ -583,12 +646,15 @@ View card definition, query, and parameters
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -615,12 +681,15 @@ Execute a saved card/question
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **execute**. May modify state: **true**.
 
@@ -647,12 +716,15 @@ Search cards, dashboards, collections, and tables
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -671,12 +743,15 @@ Browse collections
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
@@ -692,12 +767,15 @@ List collections
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -720,12 +798,15 @@ View collection contents
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **read**. May modify state: **false**.
 
@@ -748,12 +829,15 @@ Describe commands, inputs, effects, and output schemas as JSON (offline)
 | --host <url> | Override Metabase server URL (global) |  |
 | --token <value> | Override authentication token (global) |  |
 | --profile <alias> | Select a named Profile for this invocation (global) |  |
-| --format <type> | Output format: json, csv, table (global) | MB_FORMAT |
-| --error-format <type> | Error output format: text or json (global) | MB_ERROR_FORMAT |
+| --format <type> | Output format: json, csv, table (global) | "json" / MB_FORMAT |
+| --error-format <type> | Error output format: text or json (global) | "text" / MB_ERROR_FORMAT |
 | --json <fields> | Select specific fields in JSON output (global) |  |
 | --jmespath <expr> | Filter JSON output with a JMESPath expression (global) |  |
 | --jq <expr> | Legacy alias for --jmespath (uses JMESPath syntax) (global) |  |
 | --no-header | Omit header row in table/CSV output (global) | true |
+| --timeout <ms> | Per-request timeout, including response body (milliseconds) (global) | 30000 / MB_TIMEOUT |
+| --deadline <ms> | Total HTTP budget, including retries and session renewal (milliseconds) (global) | 120000 / MB_DEADLINE |
+| --retries <n> | Additional attempts for transient GET failures only (0-5) (global) | 2 / MB_RETRIES |
 
 Effect: **inspect**. May modify state: **false**.
 
