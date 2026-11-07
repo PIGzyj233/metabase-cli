@@ -127,7 +127,11 @@ All commands support: `--profile <alias>`, `--format json|csv|table` (default: j
 Do not combine `--profile`/`MB_PROFILE` with `--host`, `--token`, `MB_HOST`, or
 `MB_TOKEN`; a Profile is an atomic identity.
 
-`query` and `card run` also support: `--limit <n>` (default: 100), `--offset <n>` for pagination.
+`query` and `card run` also support `--limit <n>` (default: 100) and
+`--offset <n>` (default: 0) for **local output slicing**. Each invocation submits
+the query again and downloads its response before slicing; these flags do not
+limit database execution or resume a stable result snapshot. If Metabase reports
+truncation, omitted rows cannot be recovered by increasing `--offset`.
 
 ## Recommended Workflow
 
@@ -135,7 +139,9 @@ Do not combine `--profile`/`MB_PROFILE` with `--host`, `--token`, `MB_HOST`, or
 2. `mb db tables <db-id>` — see tables in a database
 3. `mb db fields <table-id>` — understand table schema
 4. `mb query "SELECT ..." --db <id>` — run your query
-5. If query returned many rows, use `--offset` to paginate
+5. For large results, narrow the SQL with filters, deterministic ordering, and
+   suitable SQL limits. Use `--offset` only when intentionally rerunning a query
+   to inspect a different local slice; the result may have changed.
 
 Or find existing reports:
 1. `mb search "<keyword>"` — find saved cards/dashboards

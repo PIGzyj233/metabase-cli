@@ -25,16 +25,19 @@ export function unpackDatasetResult(
 
   const rows = raw.data?.rows || [];
   const cols = raw.data?.cols || [];
-  const allData = formatQueryResult(rows, cols);
   const limit = options.limit ?? 100;
   const offset = options.offset ?? 0;
+  const truncated = raw.data?.rows_truncated;
 
   return {
-    data: allData.slice(offset, offset + limit),
+    data: formatQueryResult(rows.slice(offset, offset + limit), cols),
     pagination: {
-      total: allData.length,
+      total: rows.length,
       offset,
       limit,
+      ...((truncated === true || (typeof truncated === "number" && truncated > 0))
+        ? { truncated: true }
+        : {}),
     },
   };
 }

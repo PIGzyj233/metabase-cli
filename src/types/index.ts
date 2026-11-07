@@ -42,6 +42,7 @@ export interface PaginationInfo {
   total: number;
   offset: number;
   limit: number;
+  truncated?: boolean;
 }
 
 export interface ApiErrorResponse {

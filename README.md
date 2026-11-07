@@ -102,6 +102,14 @@ command. `--profile`/`MB_PROFILE` cannot be combined with `--host`, `--token`,
 
 ## Output
 
+`query` and `card run` accept `--limit` (default 100) and `--offset` (default
+0) to slice the rows returned by Metabase **locally**. These flags do not limit
+database execution or network transfer. Each invocation submits the query again;
+changing `--offset` does not resume a stable result snapshot. For large native
+queries, put appropriate filtering, ordering, and limits in your SQL. If Metabase
+reports truncation, stderr warns that omitted rows cannot be recovered with
+`--offset`.
+
 - JSON by default (array of objects) — ideal for AI agent parsing
 - Every JSON record includes `_source`: the Profile alias, or the Host key for
   bare override calls

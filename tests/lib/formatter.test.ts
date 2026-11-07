@@ -150,6 +150,27 @@ describe("formatter", () => {
   });
 
   describe("formatPaginationInfo", () => {
+    it("warns that changing the slice submits the query again", () => {
+      const msg = formatPaginationInfo({ total: 200, offset: 0, limit: 100 });
+      expect(msg).toContain("local output slice");
+      expect(msg).toContain("submitting the query again");
+      expect(msg).toContain("results may change");
+    });
+
+    it("reports an exhausted slice without an inverted row range", () => {
+      const msg = formatPaginationInfo({ total: 3, offset: 10, limit: 100 });
+      expect(msg).toContain("No rows at offset 10");
+      expect(msg).not.toContain("11-3");
+      expect(msg).not.toContain("next slice");
+    });
+
+    it("warns about upstream truncation even when all returned rows fit", () => {
+      const msg = formatPaginationInfo({ total: 3, offset: 0, limit: 100, truncated: true });
+      expect(msg).toContain("Metabase truncated");
+      expect(msg).toContain("not the full query total");
+      expect(msg).toContain("--offset cannot recover");
+    });
+
     it("formats pagination metadata", () => {
       const msg = formatPaginationInfo({ total: 1523, offset: 0, limit: 100 });
       expect(msg).toContain("1-100");

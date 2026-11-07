@@ -60,6 +60,22 @@ describe("dataset-result", () => {
     });
   });
 
+  it.each([true, 10000])("preserves upstream truncation marker %s", (rowsTruncated) => {
+    const result = unpackDatasetResult(
+      { data: { rows: [[1]], cols: [{ name: "id" }], rows_truncated: rowsTruncated } },
+      { failureMessage: "Query execution failed" },
+    );
+    expect(result.pagination).toEqual({ total: 1, offset: 0, limit: 100, truncated: true });
+  });
+
+  it.each([false, 0, undefined])("does not report truncation for %s", (rowsTruncated) => {
+    const result = unpackDatasetResult(
+      { data: { rows: [[1]], cols: [{ name: "id" }], rows_truncated: rowsTruncated } },
+      { failureMessage: "Query execution failed" },
+    );
+    expect(result.pagination.truncated).toBeUndefined();
+  });
+
   it("returns empty data and pagination for missing data", () => {
     const result = unpackDatasetResult(
       {},

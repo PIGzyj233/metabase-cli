@@ -77,15 +77,23 @@ export function formatTable(
 }
 
 export function formatPaginationInfo(info: PaginationInfo): string {
-  if (info.total <= info.limit && info.offset === 0) {
+  if (info.total <= info.limit && info.offset === 0 && !info.truncated) {
     return "";
   }
-  const start = info.offset + 1;
+  const start = info.offset < info.total ? info.offset + 1 : 0;
   const end = Math.min(info.offset + info.limit, info.total);
   const nextOffset = info.offset + info.limit;
-  let msg = `// Showing rows ${start}-${end} of ${info.total} returned by Metabase.`;
+  let msg = start === 0
+    ? `// No rows at offset ${info.offset}; Metabase returned ${info.total} rows.`
+    : `// Showing rows ${start}-${end} of ${info.total} returned by Metabase (local output slice).`;
   if (nextOffset < info.total) {
-    msg += `\n// Use --offset ${nextOffset} to see next page.`;
+    msg += `\n// --offset ${nextOffset} selects the next slice by submitting the query again; results may change.`;
+  }
+  if (info.offset > 0) {
+    msg += "\n// --offset slices this response locally; it does not resume a previous query.";
+  }
+  if (info.truncated) {
+    msg += "\n// Metabase truncated the result; the returned row count is not the full query total. --offset cannot recover omitted rows.";
   }
   return msg;
 }
