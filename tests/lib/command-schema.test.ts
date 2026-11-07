@@ -25,6 +25,7 @@ describe("machine command schema", () => {
     expect(schema.command.effect).toBe("execute");
     expect(schema.command.mutates).toBe(true);
     expect(schema.command.output_schema.$ref).toBe("#/definitions/records");
+    expect(Object.keys(schema.definitions).sort()).toEqual(["error", "records"]);
   });
 
   it("includes Commander conflicts and newly registered options automatically", () => {

@@ -125,10 +125,17 @@ export function commandSchema(program: Command, path: string[] = []) {
     if (!next) throw new CliError("INVALID_INPUT", `Unknown command path: ${path.join(" ")}`, "Run 'mb schema' to list available commands.");
     selected = next;
   }
+  const command = describeCommand(selected);
+  const referenced = new Set<string>(["error"]);
+  const collect = (node: Record<string, any>) => {
+    if (node.output_schema) referenced.add(node.output_schema.$ref.split("/").at(-1));
+    node.commands.forEach(collect);
+  };
+  collect(command);
   return {
     schema_version: 1, cli_version: program.version(),
-    notes: ["Output schemas describe default JSON before field selection or explicit JMESPath transformation.", "Errors use the error schema only with --error-format json or MB_ERROR_FORMAT=json.", "execute commands may modify data depending on SQL and database permissions; they are not assumed read-only."],
-    command: describeCommand(selected), definitions: OUTPUT_DEFINITIONS,
+    notes: ["Output schemas describe default JSON before field selection or explicit JMESPath transformation.", "Errors use the error schema only with --error-format json or MB_ERROR_FORMAT=json; diagnostics may precede the final error record on stderr.", "execute commands may modify data depending on SQL and database permissions; they are not assumed read-only."],
+    command, definitions: Object.fromEntries([...referenced].map(name => [name, OUTPUT_DEFINITIONS[name]])),
   };
 }
 
