@@ -490,28 +490,24 @@ hosts:
       expect(status.loggedIn).toBe(false);
     });
 
-    it("detects MB_HOST + MB_TOKEN bare override", async () => {
+    it("ignores MB_HOST + MB_TOKEN for Profile inventory status", async () => {
       vi.stubEnv("MB_HOST", "https://env-only.example.com");
       vi.stubEnv("MB_TOKEN", "mb_envonly_key");
       const { getAuthStatus } = await import(
         "../../src/commands/auth/status.js"
       );
       const status = getAuthStatus();
-      expect(status.loggedIn).toBe(true);
-      expect(status.host).toBe("env-only.example.com");
-      expect(status.tokenType).toBe("api_key");
+      expect(status).toEqual({ loggedIn: false });
     });
 
-    it("detects MB_HOST + MB_SESSION_TOKEN bare override", async () => {
+    it("ignores MB_HOST + MB_SESSION_TOKEN for Profile inventory status", async () => {
       vi.stubEnv("MB_HOST", "https://env-session.example.com");
       vi.stubEnv("MB_SESSION_TOKEN", "session_from_env");
       const { getAuthStatus } = await import(
         "../../src/commands/auth/status.js"
       );
       const status = getAuthStatus();
-      expect(status.loggedIn).toBe(true);
-      expect(status.host).toBe("env-session.example.com");
-      expect(status.tokenType).toBe("session");
+      expect(status).toEqual({ loggedIn: false });
     });
 
     it("rejects a token-only override instead of using the Active Profile", async () => {
@@ -525,7 +521,7 @@ hosts:
         "../../src/commands/auth/status.js"
       );
       expect(() => getAuthStatus({ token: "mb_clioverride" }))
-        .toThrow(/requires both a host/);
+        .toThrow(/inspects saved Profiles/);
     });
 
     it("formats output as structured JSON data", async () => {

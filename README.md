@@ -77,6 +77,10 @@ Profile management commands act on `~/.config/mb/config.yml`, not on
 environment variables. Environment variables decide which identity a single
 command runs as; the config file is the inventory of Profiles you can pick from.
 
+`auth status` inspects saved credentials locally, not whether a token is valid on
+the server. It accepts `--profile`/`MB_PROFILE`, ignores bare-override environment
+variables, and rejects explicit `--host`/`--token`.
+
 ## Commands
 
 ```

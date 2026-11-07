@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { loadConfig } from "../../lib/config.js";
+import { loadConfig, resolveFormat } from "../../lib/config.js";
 import { output } from "../../lib/formatter.js";
-import { resolveCommandOutputOptions } from "../../lib/output-options.js";
+import { handleCommandError } from "../../lib/errors.js";
 import type { GlobalOptions } from "../../types/index.js";
 
 export interface AuthListRow {
@@ -31,6 +31,15 @@ export function registerAuthListCommand(parent: Command): void {
     .description("List saved Profiles")
     .action(function (this: Command) {
       const opts = this.optsWithGlobals() as GlobalOptions;
-      output(getAuthList(), resolveCommandOutputOptions(opts));
+      try {
+        output(getAuthList(), {
+          format: resolveFormat(opts),
+          json: opts.json,
+          jq: opts.jq,
+          omitHeader: opts.omitHeader ?? opts.header === false,
+        });
+      } catch (error) {
+        handleCommandError(error);
+      }
     });
 }

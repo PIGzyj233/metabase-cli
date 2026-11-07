@@ -147,3 +147,40 @@ describe("bare override isolation", () => {
     expect(() => resolveDefaultDb({})).toThrow(/Profile default_db/);
   });
 });
+
+describe("Profile inventory commands", () => {
+  it("lists saved Profiles despite conflicting or incomplete runtime environment", async () => {
+    vi.stubEnv("MB_PROFILE", "missing");
+    vi.stubEnv("MB_HOST", "https://other.test");
+    const { Command } = await import("commander");
+    const { registerAuthListCommand } = await import("../../src/commands/auth/list.js");
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const program = new Command();
+    registerAuthListCommand(program.command("auth"));
+    await program.parseAsync(["node", "mb", "auth", "list"]);
+    const rows = JSON.parse(String(stdout.mock.calls[0][0]));
+    expect(rows.map((row: any) => [row.alias, row._source])).toEqual([["admin", "admin"], ["analyst", "analyst"]]);
+    expect(JSON.stringify(rows)).not.toContain("old");
+    expect(process.exitCode).not.toBe(1);
+  });
+
+  it("reports the saved Profile source even when bare environment points elsewhere", async () => {
+    vi.stubEnv("MB_HOST", "https://other.test");
+    vi.stubEnv("MB_TOKEN", "mb_other");
+    const { Command } = await import("commander");
+    const { registerAuthStatusCommand } = await import("../../src/commands/auth/status.js");
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const program = new Command();
+    registerAuthStatusCommand(program.command("auth"));
+    await program.parseAsync(["node", "mb", "auth", "status"]);
+    expect(JSON.parse(String(stdout.mock.calls[0][0]))).toMatchObject([{ _source: "admin", host: "same.test/root", username: "admin" }]);
+    expect(stderr).toHaveBeenCalledWith("// Source: admin (https://same.test/root)\n");
+  });
+
+  it("inspects an explicitly selected saved Profile despite bare environment", async () => {
+    vi.stubEnv("MB_HOST", "https://other.test");
+    const { getAuthStatus } = await import("../../src/commands/auth/status.js");
+    expect(getAuthStatus({ profile: "analyst" })).toMatchObject({ sourceId: "analyst", username: "analyst" });
+  });
+});

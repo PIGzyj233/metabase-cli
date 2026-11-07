@@ -84,6 +84,21 @@ function profileToIdentity(alias: string, profile: ProfileConfig): ResolvedProfi
   };
 }
 
+// Profile inventory commands deliberately ignore bare-override environment variables.
+export function resolveStoredProfile(alias?: string): ResolvedProfile | null {
+  const config = loadConfig();
+  if (alias) {
+    const profile = config.profiles?.[alias];
+    if (!profile) {
+      const known = Object.keys(config.profiles ?? {});
+      throw new Error(`Unknown Profile '${alias}'. Known Profiles: ${known.join(", ") || "(none)"}.`);
+    }
+    return profileToIdentity(alias, profile);
+  }
+  const active = getActiveProfile(config);
+  return active ? profileToIdentity(active.alias, active.profile) : null;
+}
+
 export function resolveProfile(opts: GlobalOptions): ResolvedIdentity | null {
   const selectedProfile = nonEmpty(opts.profile) ?? nonEmpty(process.env.MB_PROFILE);
   const cliHost = nonEmpty(opts.host);
