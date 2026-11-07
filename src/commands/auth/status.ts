@@ -68,7 +68,7 @@ export function registerAuthStatusCommand(parent: Command): void {
 
         output([record], outputOptions);
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, globalOpts, { resolveSource: false });
       }
     });
 }

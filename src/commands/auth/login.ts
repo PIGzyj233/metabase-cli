@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { handleCommandError } from "../../lib/errors.js";
 import { createInterface } from "node:readline";
 import { storeToken, loginWithPassword, detectTokenType, type StoreTokenOptions } from "../../lib/auth.js";
 import { normalizeHostKey } from "../../lib/config.js";
@@ -116,9 +117,7 @@ export function registerAuthLoginCommand(parent: Command): void {
         if (process.stdin.isTTY) {
           const host = opts.host || await promptLine("Metabase host: ");
           if (!host) {
-            process.stderr.write("Error: Host is required.\n");
-            process.exitCode = 1;
-            return;
+            throw new Error("Host is required.");
           }
           const username = await promptLine("Username: ");
           const password = await promptLine("Password: ");
@@ -128,13 +127,9 @@ export function registerAuthLoginCommand(parent: Command): void {
         }
 
         // No credentials available
-        process.stderr.write(
-          "Error: Provide --token, --username + --password, set MB_USERNAME + MB_PASSWORD, or run interactively.\n"
-        );
-        process.exitCode = 1;
+        throw new Error("Credentials required. Provide --token, --username + --password, set MB_USERNAME + MB_PASSWORD, or run interactively.");
       } catch (e: any) {
-        process.stderr.write(`Error: ${e.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(e, opts, { resolveSource: false, sourceId: opts.as });
       }
     });
 }

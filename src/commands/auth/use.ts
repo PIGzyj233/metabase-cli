@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { handleCommandError } from "../../lib/errors.js";
 import { loadConfig, saveConfig } from "../../lib/config.js";
 
 export function handleAuthUse(alias: string): void {
@@ -24,12 +25,11 @@ export function registerAuthUseCommand(parent: Command): void {
   parent
     .command("use <alias>")
     .description("Set the Active Profile")
-    .action((alias: string) => {
+    .action(function (this: Command, alias: string) {
       try {
         handleAuthUse(alias);
       } catch (error: any) {
-        process.stderr.write(`Error: ${error.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(error, this.optsWithGlobals(), { resolveSource: false, sourceId: alias });
       }
     });
 }

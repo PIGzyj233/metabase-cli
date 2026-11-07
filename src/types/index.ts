@@ -27,6 +27,7 @@ export interface GlobalOptions {
   token?: string;
   profile?: string;
   format?: "json" | "csv" | "table";
+  errorFormat?: "json" | "text";
   json?: string;
   jq?: string;
   header?: boolean;

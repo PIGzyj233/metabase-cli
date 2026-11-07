@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { handleCommandError } from "../../lib/errors.js";
 import { loadConfig, saveConfig } from "../../lib/config.js";
 
 export async function handleAuthRm(alias: string): Promise<void> {
@@ -40,12 +41,11 @@ export function registerAuthRmCommand(parent: Command): void {
   parent
     .command("rm <alias>")
     .description("Remove a saved Profile")
-    .action(async (alias: string) => {
+    .action(async function (this: Command, alias: string) {
       try {
         await handleAuthRm(alias);
       } catch (error: any) {
-        process.stderr.write(`Error: ${error.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(error, this.optsWithGlobals(), { resolveSource: false, sourceId: alias });
       }
     });
 }
