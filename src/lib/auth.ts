@@ -172,6 +172,16 @@ export function resolveInvocationProfile(opts: GlobalOptions): ResolvedIdentity 
   return invocationIdentities.get(opts) ?? null;
 }
 
+// Wrapper commands may add options before delegating. Both layers must retain
+// the exact same identity for requests and error attribution.
+export function inheritInvocationProfile<T extends GlobalOptions>(
+  original: GlobalOptions,
+  delegated: T,
+): T {
+  invocationIdentities.set(delegated, resolveInvocationProfile(original));
+  return delegated;
+}
+
 export function renewProfileToken(
   identity: ResolvedProfile,
   token: string,

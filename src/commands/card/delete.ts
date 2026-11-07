@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { inheritInvocationProfile } from "../../lib/auth.js";
 import { createApiClient } from "../../lib/api-client.js";
 import type { GlobalOptions } from "../../types/index.js";
 import { parseRequiredId, handleCommandError } from "../db/common.js";
@@ -21,7 +22,7 @@ export async function handleCardDelete(
   }
 
   const { hardDelete: _hardDelete, ...updateOpts } = opts;
-  await handleCardUpdate(parsedCardId, { ...updateOpts, archived: true });
+  await handleCardUpdate(parsedCardId, inheritInvocationProfile(opts, { ...updateOpts, archived: true }));
   return { mode: "archived", id: parsedCardId };
 }
 

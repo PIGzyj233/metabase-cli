@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getFetchCalls, mockFetch, resetMock } from "../helpers/mock-server.js";
+import type { GlobalOptions } from "../../src/types/index.js";
 
 const configHome = vi.hoisted(() => ({ path: "" }));
 vi.mock("node:os", async (importOriginal) => ({
@@ -182,5 +183,46 @@ describe("Profile inventory commands", () => {
     vi.stubEnv("MB_HOST", "https://other.test");
     const { getAuthStatus } = await import("../../src/commands/auth/status.js");
     expect(getAuthStatus({ profile: "analyst" })).toMatchObject({ sourceId: "analyst", username: "analyst" });
+  });
+});
+
+describe("delegated command identity", () => {
+  it.each(["archive", "delete"])("keeps %s failure attribution when the Active Profile changes during a request", async (command) => {
+    const { Command } = await import("commander");
+    const { registerCardArchiveCommand } = await import("../../src/commands/card/archive.js");
+    const { registerCardDeleteCommand } = await import("../../src/commands/card/delete.js");
+    const { loadConfig, saveConfig } = await import("../../src/lib/config.js");
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+      expect(init?.headers).toHaveProperty("X-Metabase-Session", "admin-old");
+      const config = loadConfig();
+      config.current_profile = "analyst";
+      saveConfig(config);
+      return new Response(JSON.stringify({ message: "request failed" }), { status: 500 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const program = new Command();
+    const card = program.command("card");
+    registerCardArchiveCommand(card);
+    registerCardDeleteCommand(card);
+    await program.parseAsync(["node", "mb", "card", command, "42"]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(stderr).toHaveBeenCalledWith("[admin] Error: request failed\n");
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("shares the original snapshot with delegated options even before the request starts", async () => {
+    const { inheritInvocationProfile, resolveInvocationProfile } = await import("../../src/lib/auth.js");
+    const { createApiClient } = await import("../../src/lib/api-client.js");
+    const { loadConfig, saveConfig } = await import("../../src/lib/config.js");
+    const original: GlobalOptions = {};
+    const delegated = inheritInvocationProfile(original, { ...original, archived: true });
+    const config = loadConfig();
+    config.current_profile = "analyst";
+    saveConfig(config);
+    mockFetch([{ status: 200, body: [] }]);
+    await createApiClient(delegated).get("/api/card");
+    expect(getFetchCalls()[0].init?.headers).toHaveProperty("X-Metabase-Session", "admin-old");
+    expect(resolveInvocationProfile(delegated)).toBe(resolveInvocationProfile(original));
   });
 });
