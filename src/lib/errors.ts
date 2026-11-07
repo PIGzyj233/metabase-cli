@@ -54,7 +54,11 @@ export function toStructuredError(
   let hint = "Review the command arguments and error message before retrying.";
   let retryable = false;
   let message = rawMessage;
-  if (status !== undefined) {
+  if ((error instanceof Error && /YAML|ParseError/.test(error.name)) || /^(EACCES|EPERM|EISDIR)$/.test(namedCode)) {
+    code = "CONFIGURATION_ERROR";
+    message = "Configuration could not be read. Check config.yml syntax and permissions.";
+    hint = "Correct the local configuration without exposing credential values.";
+  } else if (status !== undefined) {
     if (status === 401) { code = "AUTHENTICATION_REQUIRED"; hint = "Authenticate the selected Profile with 'mb auth login'."; }
     else if (status === 403) { code = "PERMISSION_DENIED"; hint = "Use a Profile permitted to access this resource."; }
     else if (status === 404) { code = "NOT_FOUND"; hint = "Check the resource ID and selected Profile."; }
@@ -64,10 +68,6 @@ export function toStructuredError(
   } else if (namedCode.startsWith("commander.") || /must |required|cannot be combined|Unknown (parameter|template tag)|Invalid JMESPath/i.test(rawMessage)) {
     code = "INVALID_INPUT";
     hint = "Use 'mb schema' or command --help to inspect accepted arguments.";
-  } else if ((error instanceof Error && /YAML|ParseError/.test(error.name)) || /^(EACCES|EPERM|EISDIR)$/.test(namedCode)) {
-    code = "CONFIGURATION_ERROR";
-    message = "Configuration could not be read. Check config.yml syntax and permissions.";
-    hint = "Correct the local configuration without exposing credential values.";
   } else if (/Unknown Profile|Bare override|Profile selection|No Metabase host configured|Profile.*changed during/.test(rawMessage)) {
     code = "CONFIGURATION_ERROR";
     hint = "Inspect 'mb auth list' and select a valid Profile or a complete host/token pair.";

@@ -39,7 +39,7 @@ describe("structured errors", () => {
   });
 
   it("does not include YAML snippets or stacks", () => {
-    const error = new Error("token: confidential\ninvalid indentation"); error.name = "YAMLParseError";
+    const error = new Error("token: confidential-required\ninvalid indentation"); error.name = "YAMLParseError";
     const result = toStructuredError(error, undefined);
     expect(result.code).toBe("CONFIGURATION_ERROR");
     expect(JSON.stringify(result)).not.toContain("confidential");
