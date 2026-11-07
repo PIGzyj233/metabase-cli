@@ -23,7 +23,7 @@ export async function handleDbTables(
     return tables.map(projectTable);
   }
 
-  const metadata = await client.get(`/api/database/${dbId}/metadata`);
+  const metadata = await client.get(`/api/database/${dbId}/metadata`, { skip_fields: "true" });
   return (metadata.tables || []).map(projectTable);
 }
 
