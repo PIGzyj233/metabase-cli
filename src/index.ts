@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import { registerAuthLoginCommand } from "./commands/auth/login.js";
 import { registerAuthListCommand } from "./commands/auth/list.js";
 import { registerAuthLogoutCommand } from "./commands/auth/logout.js";
@@ -34,7 +34,8 @@ program
 program.option("--host <url>", "Override Metabase server URL");
 program.option("--token <value>", "Override authentication token");
 program.option("--profile <alias>", "Select a named Profile for this invocation");
-program.option("--format <type>", "Output format: json, csv, table");
+program.addOption(new Option("--format <type>", "Output format: json, csv, table")
+  .choices(["json", "csv", "table"]).env("MB_FORMAT"));
 program.option("--json <fields>", "Select specific fields in JSON output");
 program.option("--jq <expr>", "Filter JSON output with jmespath expression");
 program.option("--no-header", "Omit header row in table/CSV output");

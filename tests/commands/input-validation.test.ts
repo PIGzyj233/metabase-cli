@@ -95,3 +95,20 @@ describe("card parameter validation", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 });
+
+
+describe("output format validation", () => {
+  it("rejects invalid explicit and environment formats before the command runs", async () => {
+    const env = { MB_HOST: "http://127.0.0.1:1", MB_TOKEN: "mb_fake" };
+    for (const [args, overrides] of [
+      [["query", "SELECT 1", "--db", "1", "--format", "yaml"], {}],
+      [["card", "create", "--name", "test", "--database", "1", "--sql", "SELECT 1"], { MB_FORMAT: "yaml" }],
+    ] as [string[], Record<string, string>][]) {
+      const result = await runCli(args, { ...env, ...overrides });
+      expect(result.code).not.toBe(0);
+      expect(result.stdout).toBe("");
+      expect(result.stderr).toMatch(/Allowed choices are json, csv, table/);
+      expect(result.stderr).not.toMatch(/fetch failed/);
+    }
+  });
+});
