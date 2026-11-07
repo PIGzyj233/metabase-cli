@@ -172,6 +172,19 @@ describe("bounded transport", () => {
 });
 
 describe("API transport integration", () => {
+  it.each([{}, { id: "" }, { id: "  " }, { id: 123 }, null])("reports a malformed successful login as INVALID_RESPONSE: %j", async (body) => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify(body)));
+    vi.stubGlobal("fetch", fetch);
+    const { loginWithPassword } = await import("../../src/lib/auth.js");
+    await expect(loginWithPassword("https://example.invalid", "fake-user", "fake-password"))
+      .rejects.toMatchObject({
+        code: "INVALID_RESPONSE",
+        retryable: false,
+        hint: expect.stringContaining("authentication endpoint response"),
+      });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the same deadline through session renewal and does not resend an expired operation", async () => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
     vi.stubEnv("MB_HOST", "https://example.invalid");

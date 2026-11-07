@@ -7,7 +7,7 @@ import {
   saveConfig,
 } from "./config.js";
 import type { GlobalOptions, ProfileConfig } from "../types/index.js";
-import { getInvocationTransport, inheritInvocationTransport, HttpStatusError, type HttpTransport } from "./http-transport.js";
+import { getInvocationTransport, inheritInvocationTransport, HttpStatusError, TransportError, type HttpTransport } from "./http-transport.js";
 
 export interface TokenInfo {
   token: string;
@@ -274,7 +274,8 @@ export async function loginWithPassword(
   }
   const body = res.body;
   if (!body || typeof body.id !== "string" || !body.id.trim()) {
-    throw new Error("Metabase returned no session token after login.");
+    throw new TransportError("INVALID_RESPONSE", "Metabase returned no session token after login.", false,
+      "Check the Metabase base URL and authentication endpoint response before retrying login.");
   }
   return body.id; // session token
 }
