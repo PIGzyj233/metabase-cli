@@ -1,3 +1,6 @@
+import { createRequire } from "node:module";
+import { registerSchemaCommand } from "./lib/command-schema.js";
+import { CliError } from "./lib/cli-error.js";
 import { handleCommandError } from "./lib/errors.js";
 import type { GlobalOptions } from "./types/index.js";
 import { Command, Option } from "commander";
@@ -29,73 +32,74 @@ import { registerCollectionListCommand } from "./commands/collection/list.js";
 import { registerCollectionViewCommand } from "./commands/collection/view.js";
 
 export function createProgram(): Command {
-const program = new Command();
+  const program = new Command();
 
-program
-  .name("mb")
-  .description("Metabase CLI — query data from the terminal")
-  .version("0.2.2");
+  program
+    .name("mb")
+    .description("Metabase CLI — query data from the terminal")
+    .version(createRequire(import.meta.url)("../package.json").version);
 
-// Global flags — inherited by all subcommands
-program.option("--host <url>", "Override Metabase server URL");
-program.option("--token <value>", "Override authentication token");
-program.option("--profile <alias>", "Select a named Profile for this invocation");
-program.addOption(new Option("--format <type>", "Output format: json, csv, table")
-  .choices(["json", "csv", "table"]).env("MB_FORMAT"));
-program.addOption(new Option("--error-format <type>", "Error output format: text or json")
-  .choices(["text", "json"]).env("MB_ERROR_FORMAT"));
-program.option("--json <fields>", "Select specific fields in JSON output");
-program.addOption(new Option("--jmespath <expr>", "Filter JSON output with a JMESPath expression")
-  .argParser(parseJmesPathExpression).conflicts("jq"));
-program.option("--jq <expr>", "Legacy alias for --jmespath (uses JMESPath syntax)", parseJmesPathExpression);
-program.hook("preAction", () => {
-  const expression = program.opts().jmespath;
-  if (expression !== undefined) program.setOptionValue("jq", expression);
-});
-program.option("--no-header", "Omit header row in table/CSV output");
+  // Global flags — inherited by all subcommands
+  program.option("--host <url>", "Override Metabase server URL");
+  program.option("--token <value>", "Override authentication token");
+  program.option("--profile <alias>", "Select a named Profile for this invocation");
+  program.addOption(new Option("--format <type>", "Output format: json, csv, table")
+    .choices(["json", "csv", "table"]).env("MB_FORMAT"));
+  program.addOption(new Option("--error-format <type>", "Error output format: text or json")
+    .choices(["text", "json"]).env("MB_ERROR_FORMAT"));
+  program.option("--json <fields>", "Select specific fields in JSON output");
+  program.addOption(new Option("--jmespath <expr>", "Filter JSON output with a JMESPath expression")
+    .argParser(parseJmesPathExpression).conflicts("jq"));
+  program.option("--jq <expr>", "Legacy alias for --jmespath (uses JMESPath syntax)", parseJmesPathExpression);
+  program.hook("preAction", () => {
+    const expression = program.opts().jmespath;
+    if (expression !== undefined) program.setOptionValue("jq", expression);
+  });
+  program.option("--no-header", "Omit header row in table/CSV output");
 
-// Auth commands
-const authCmd = program.command("auth").description("Manage authentication");
-registerAuthLoginCommand(authCmd);
-registerAuthListCommand(authCmd);
-registerAuthLogoutCommand(authCmd);
-registerAuthRmCommand(authCmd);
-registerAuthStatusCommand(authCmd);
-registerAuthUseCommand(authCmd);
-registerAuthCheckCommand(authCmd);
-registerAuthSetDefaultDbCommand(authCmd);
+  // Auth commands
+  const authCmd = program.command("auth").description("Manage authentication");
+  registerAuthLoginCommand(authCmd);
+  registerAuthListCommand(authCmd);
+  registerAuthLogoutCommand(authCmd);
+  registerAuthRmCommand(authCmd);
+  registerAuthStatusCommand(authCmd);
+  registerAuthUseCommand(authCmd);
+  registerAuthCheckCommand(authCmd);
+  registerAuthSetDefaultDbCommand(authCmd);
 
-// Database metadata commands
-const dbCmd = program.command("db").description("Database metadata operations");
-registerDbListCommand(dbCmd);
-registerDbSchemasCommand(dbCmd);
-registerDbTablesCommand(dbCmd);
-registerDbFieldsCommand(dbCmd);
-registerDbMetadataCommand(dbCmd);
-registerDbSchemaCommand(dbCmd);
+  // Database metadata commands
+  const dbCmd = program.command("db").description("Database metadata operations");
+  registerDbListCommand(dbCmd);
+  registerDbSchemasCommand(dbCmd);
+  registerDbTablesCommand(dbCmd);
+  registerDbFieldsCommand(dbCmd);
+  registerDbMetadataCommand(dbCmd);
+  registerDbSchemaCommand(dbCmd);
 
-// Query command
-registerQueryCommand(program);
+  // Query command
+  registerQueryCommand(program);
 
-// Card commands
-const cardCmd = program.command("card").description("Saved cards/questions");
-registerCardListCommand(cardCmd);
-registerCardCreateCommand(cardCmd);
-registerCardUpdateCommand(cardCmd);
-registerCardDeleteCommand(cardCmd);
-registerCardArchiveCommand(cardCmd);
-registerCardViewCommand(cardCmd);
-registerCardRunCommand(cardCmd);
+  // Card commands
+  const cardCmd = program.command("card").description("Saved cards/questions");
+  registerCardListCommand(cardCmd);
+  registerCardCreateCommand(cardCmd);
+  registerCardUpdateCommand(cardCmd);
+  registerCardDeleteCommand(cardCmd);
+  registerCardArchiveCommand(cardCmd);
+  registerCardViewCommand(cardCmd);
+  registerCardRunCommand(cardCmd);
 
-// Search command
-registerSearchCommand(program);
+  // Search command
+  registerSearchCommand(program);
 
-// Collection commands
-const collectionCmd = program.command("collection").description("Browse collections");
-registerCollectionListCommand(collectionCmd);
-registerCollectionViewCommand(collectionCmd);
+  // Collection commands
+  const collectionCmd = program.command("collection").description("Browse collections");
+  registerCollectionListCommand(collectionCmd);
+  registerCollectionViewCommand(collectionCmd);
 
-return program;
+  registerSchemaCommand(program);
+  return program;
 }
 
 
@@ -114,9 +118,10 @@ function errorOptionsFromArgv(argv: string[]): GlobalOptions & { password?: stri
 export async function runCli(argv: string[] = process.argv): Promise<void> {
   const program = createProgram();
   let actionOptions: GlobalOptions | undefined;
+  let commanderHelp = "";
   const configure = (command: Command) => {
     command.exitOverride();
-    command.configureOutput({ writeErr: () => {}, outputError: () => {} });
+    command.configureOutput({ writeErr: text => { commanderHelp += text; }, outputError: () => {} });
     command.commands.forEach(configure);
   };
   configure(program);
@@ -125,7 +130,15 @@ export async function runCli(argv: string[] = process.argv): Promise<void> {
     await program.parseAsync(argv);
   } catch (error) {
     if (error && typeof error === "object" && "exitCode" in error && error.exitCode === 0) return;
-    handleCommandError(error, actionOptions ?? { ...program.opts(), ...errorOptionsFromArgv(argv.slice(2)) },
-      { resolveSource: actionOptions !== undefined });
+    const opts = actionOptions ?? { ...program.opts(), ...errorOptionsFromArgv(argv.slice(2)) };
+    if (commanderHelp) {
+      if ((opts.errorFormat ?? process.env.MB_ERROR_FORMAT) !== "json") {
+        process.stderr.write(commanderHelp);
+        process.exitCode = 1;
+        return;
+      }
+      error = new CliError("INVALID_INPUT", "A subcommand is required.", "Run 'mb schema' or --help to inspect available commands.");
+    }
+    handleCommandError(error, opts, { resolveSource: actionOptions !== undefined });
   }
 }
