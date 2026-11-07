@@ -23,10 +23,14 @@ export interface Config {
 }
 
 export interface GlobalOptions {
+  timeout?: number;
+  deadline?: number;
+  retries?: number;
   host?: string;
   token?: string;
   profile?: string;
   format?: "json" | "csv" | "table";
+  errorFormat?: "json" | "text";
   json?: string;
   jq?: string;
   header?: boolean;
@@ -53,7 +57,9 @@ export interface ApiErrorResponse {
 export interface CardCreateOptions extends GlobalOptions {
   name?: string;
   database?: string;
+  db?: string;
   sql?: string;
+  sqlFile?: string;
   display?: string;
   collection?: string;
   description?: string;
@@ -67,5 +73,6 @@ export interface CardUpdateOptions extends GlobalOptions {
   collection?: string;
   archived?: boolean;
   sql?: string;
+  sqlFile?: string;
   from?: string;
 }

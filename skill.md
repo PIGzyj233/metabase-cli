@@ -5,7 +5,10 @@ description: Query data from Metabase databases. Use when the user needs to quer
 
 # Metabase CLI (`mb`)
 
-Query Metabase databases from the terminal. Designed for AI agent use — JSON output by default, pagination info to stderr, structured errors.
+Query Metabase databases from the terminal. JSON results go to stdout; select
+`--error-format json` (or `MB_ERROR_FORMAT=json`) for structured failures on
+stderr. Use `mb schema <command...>` to discover accepted inputs and output
+contracts without authentication or network access.
 
 ## Installation
 
@@ -94,6 +97,8 @@ environment variables, and rejects explicit `--host`/`--token`.
 | `mb auth use <alias>` | Set the Active Profile offline |
 | `mb auth rm <alias>` | Remove a local Profile; session revoke is best effort |
 | `mb auth status [--profile <alias>]` | Show Active or selected Profile auth state |
+| `mb auth check [--profile <alias>]` | Verify authentication and database-list access online |
+| `mb auth set-default-db <id> [--profile <alias>]` | Set a saved Profile's default database offline, preserving the Active Profile |
 | `mb auth logout [--profile <alias>]` | Revoke server-side session only; keep the Profile |
 
 ### Database Exploration
@@ -104,19 +109,25 @@ environment variables, and rejects explicit `--host`/`--token`.
 | `mb db tables <db-id> [--schema <name>]` | List tables |
 | `mb db fields <table-id>` | List table fields (name, type, description) |
 | `mb db metadata <db-id>` | Full database metadata |
+| `mb db schema <db-id> [--schema <name>] [--tables <names>]` | Compact field types, descriptions, and declared key relationships in one request |
 
 ### Query Execution
 | Command | Description |
 |---------|-------------|
 | `mb query "<sql>" --db <id>` | Execute native SQL |
+| `mb query --file <path\|-> --db <id>` | Read literal SQL from a file or piped stdin |
 | `mb card list [--collection <id>]` | List saved cards |
 | `mb card create --name <name> --database <id> --sql "<sql>"` | Create a native SQL card |
 | `mb card create --from <file>` | Create a card from a JSON payload file |
+| `mb card create --name <name> --db <id> --sql-file <path\|->` | Create from a SQL file or stdin; `--db` is an alias for `--database` |
 | `mb card view <card-id>` | View card definition, parameters, and template tags |
 | `mb card run <card-id> [--params '{"key":"val"}']` | Run saved card (uses `card.parameters`) |
 | `mb card run <card-id> [--template-tags '{"key":"val"}']` | Run native SQL card (uses template tags) |
+| `mb card run <card-id> --params-file <path\|->` | Read parameter JSON from a file or stdin |
+| `mb card run <card-id> --template-tags-file <path\|->` | Read template-tag JSON from a file or stdin |
 | `mb card update <card-id> [--name ...] [--description ...] [--collection <id>] [--sql "<sql>"]` | Safely update a card via fetch-then-merge |
 | `mb card update <card-id> --from <file>` | Apply a JSON patch file to an existing card |
+| `mb card update <card-id> --sql-file <path\|->` | Update a native Card from literal SQL file or stdin |
 | `mb card delete <card-id>` | Archive a card (safe default) |
 | `mb card delete <card-id> --hard-delete` | Permanently delete a card |
 | `mb card archive <card-id>` | Explicit archive alias |
@@ -130,6 +141,14 @@ environment variables, and rejects explicit `--host`/`--token`.
 
 ### Global Flags
 All commands support: `--profile <alias>`, `--format json|csv|table` (default: json), `--json <fields>`, `--jmespath <expr>`, `--no-header`.
+
+Use `--error-format json` for stable errors. HTTP controls are `--timeout <ms>`
+(default 30000), `--deadline <ms>` (default 120000 total HTTP budget), and
+`--retries <n>` (default 2, range 0–5); their environment equivalents are
+`MB_TIMEOUT`, `MB_DEADLINE`, and `MB_RETRIES`. Only GET requests are retried for
+transient failures. The transport honors Retry-After within its delay/budget
+limits. SQL POSTs and writes are not repeated for transient failures. A request
+rejected with 401 may be replayed once after session renewal, sharing the budget.
 
 `--jq` remains a legacy alias for `--jmespath`; both use **JMESPath syntax**, such
 as `'[].name'`, not jq's `'.[].name'`. Use only one alias per invocation. Invalid
@@ -147,13 +166,32 @@ truncation, omitted rows cannot be recovered by increasing `--offset`.
 
 ## Recommended Workflow
 
-1. `mb db list` — discover available databases
-2. `mb db tables <db-id>` — see tables in a database
-3. `mb db fields <table-id>` — understand table schema
-4. `mb query "SELECT ..." --db <id>` — run your query
+1. `mb schema query` — inspect a command contract when its interface is unknown;
+   request a specific command to minimize discovery output.
+2. `mb auth check --profile <alias>` — verify connectivity and database-list
+   access when needed; this does not prove access to every table or query.
+3. `mb db list --profile <alias>` — discover databases, then
+   `mb db schema <db-id> --tables <names> --profile <alias>` to get relevant field
+   types and declared relationships. Names may be schema-qualified or table IDs.
+4. `mb query --file query.sql --db <id> --profile <alias> --error-format json` —
+   execute literal SQL. For short queries, positional SQL still works.
 5. For large results, narrow the SQL with filters, deterministic ordering, and
    suitable SQL limits. Use `--offset` only when intentionally rerunning a query
    to inspect a different local slice; the result may have changed.
+
+Use explicit `--profile` per invocation when agents operate concurrently; avoid
+switching shared Active Profile state. `auth set-default-db <id> --profile <alias>`
+can save a default offline; `--db` and `MB_DEFAULT_DB` override it. Metadata is
+not a permission guarantee: `fields_available: false` means fields were not
+returned, not that the table has no columns. Missing relationship targets retain
+field IDs and must not be guessed. Filters on `db schema` reduce output locally;
+`db tables` omits fields from its unfiltered metadata request.
+
+Prefer SQL/JSON files or piped stdin over deeply escaped command strings. Input
+must be nonempty UTF-8 and at most 16 MiB. Use `--file -`, `--sql-file -`,
+`--params-file -`, `--template-tags-file -`, or `--from -` explicitly for stdin.
+Interactive stdin and conflicting sources are rejected before API requests.
+Choose only one Card parameter source, and only one of `--db`/`--database`.
 
 Or find existing reports:
 1. `mb search "<keyword>"` — find saved cards/dashboards
@@ -211,10 +249,23 @@ mb card delete 123 --hard-delete
   preserved under a free suffix such as `_source_2`.
 - Explicit JMESPath expressions own their output shape and may omit `_source`
   or return scalars. Include `_source` in projections used to merge sources.
-  An unauthenticated `auth status` has no source to attribute.
+  An unauthenticated `auth status` and offline `mb schema` have no source to attribute.
 - stderr includes `// Source: <alias-or-host-key> (<url>)`
 - Pagination info goes to stderr, e.g.: `// Showing rows 1-100 of 1523`
-- Errors go to stderr with exit code 1 and are prefixed with `[source]`
+- Errors go to stderr with exit code 1. Text errors are prefixed with `[source]`.
+  With `--error-format json`, parse the final error line as JSON (earlier
+  diagnostics may precede it): `code`, `message`, `retryable`, `hint`, and optional
+  `http_status`/`source`. Fix `INVALID_INPUT` locally; authenticate for
+  `AUTHENTICATION_REQUIRED`; do not automatically repeat writes marked
+  `retryable: false`—verify their outcome first.
+- Successful auth changes, archive, and delete return operation receipts on
+  stdout. An API-key logout does not revoke the key. Local Profile removal can
+  succeed while server revocation fails; inspect the receipt's revocation status.
+
+`mb schema [command...]` and the generated [command reference](./docs/commands.md)
+describe current options, conflicts, effects, examples, and JSON schemas. Explicit
+JMESPath transforms may change the documented default output shape. SQL execution
+commands are not assumed read-only; their effects depend on SQL and permissions.
 
 Built-in fan-out across Profiles is intentionally absent. Use a shell loop and
 merge the already-attributed JSON:

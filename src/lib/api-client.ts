@@ -5,12 +5,15 @@ import {
   resolveInvocationProfile,
 } from "./auth.js";
 import { humanizeQueryError } from "./error-message.js";
+import { getInvocationTransport } from "./http-transport.js";
 import type { GlobalOptions } from "../types/index.js";
 
 export class ApiError extends Error {
   constructor(
     public statusCode: number,
-    message: string
+    message: string,
+    public retryable = false,
+    public hint?: string,
   ) {
     super(message);
     this.name = "ApiError";
@@ -25,6 +28,7 @@ export interface ApiClient {
 }
 
 export function createApiClient(opts: GlobalOptions): ApiClient {
+  const transport = getInvocationTransport(opts);
   const identity = resolveInvocationProfile(opts);
   if (!identity) {
     throw new ApiError(0, "No Metabase host configured. Set MB_HOST or run 'mb auth login'.");
@@ -46,7 +50,7 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
 
     const url = `${baseUrl}${path}`;
 
-    const res = await fetch(url, {
+    const res = await transport.requestJson(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -62,7 +66,7 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
           throw new ApiError(401,
             `MB_USERNAME does not match Profile '${resolvedIdentity.sourceId}'. Run 'mb auth login' for this Profile.`);
         }
-        const newToken = await loginWithPassword(baseUrl, username, password);
+        const newToken = await loginWithPassword(baseUrl, username, password, opts, transport);
         if (resolvedIdentity.kind === "profile") {
           renewProfileToken(resolvedIdentity, newToken, username);
           resolvedIdentity.username = username;
@@ -77,10 +81,14 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
     }
 
     if (!res.ok) {
-      const errorBody = await res.json().catch(() => ({}));
+      const errorBody = res.body || {};
       throw new ApiError(
         res.status,
-        humanizeQueryError(errorBody.message || `HTTP ${res.status}`)
+        humanizeQueryError(errorBody.message || `HTTP ${res.status}`),
+        method === "GET" && [429, 502, 503, 504].includes(res.status),
+        method !== "GET" && [429, 502, 503, 504].includes(res.status)
+          ? "This write was not retried automatically. Its outcome may be unknown; verify the result before trying again."
+          : undefined,
       );
     }
 
@@ -88,7 +96,7 @@ export function createApiClient(opts: GlobalOptions): ApiClient {
       return null;
     }
 
-    return res.json();
+    return res.body;
   }
 
   return {

@@ -1,4 +1,6 @@
 import { Command } from "commander";
+import { output } from "../../lib/formatter.js";
+import { resolveCommandOutputOptions } from "../../lib/output-options.js";
 import { inheritInvocationProfile } from "../../lib/auth.js";
 import { createApiClient } from "../../lib/api-client.js";
 import type { GlobalOptions } from "../../types/index.js";
@@ -35,6 +37,7 @@ export function registerCardDeleteCommand(parent: Command): void {
       const opts = this.optsWithGlobals() as CardDeleteOptions;
       try {
         const result = await handleCardDelete(cardId, opts);
+        output([{ operation: "delete", ok: true, id: result.id, status: result.mode }], resolveCommandOutputOptions(opts));
         if (result.mode === "archived") {
           process.stderr.write(`Archived card ${result.id}.\n`);
         } else {

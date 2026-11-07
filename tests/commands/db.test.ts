@@ -99,6 +99,9 @@ describe("db commands", () => {
         { id: 10, name: "users", schema: "public" },
         { id: 11, name: "orders", schema: "public" },
       ]);
+      expect(getFetchCalls()[0]?.url).toBe(
+        "https://metabase.test.com/api/database/1/metadata?skip_fields=true"
+      );
     });
 
     it("returns tables for a specific schema and URL-encodes the schema name", async () => {

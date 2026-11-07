@@ -1,7 +1,12 @@
+import { CliError } from "../../lib/cli-error.js";
 import { Command } from "commander";
+import { handleCommandError } from "../../lib/errors.js";
+import { getInvocationTransport } from "../../lib/http-transport.js";
+import { outputOperationResult, type OperationResult } from "../../lib/operation-result.js";
+import type { GlobalOptions } from "../../types/index.js";
 import { loadConfig, saveConfig } from "../../lib/config.js";
 
-export async function handleAuthRm(alias: string): Promise<void> {
+export async function handleAuthRm(alias: string, opts: GlobalOptions = {}): Promise<OperationResult> {
   const config = loadConfig();
   const profile = config.profiles?.[alias];
   if (!profile) {
@@ -11,41 +16,55 @@ export async function handleAuthRm(alias: string): Promise<void> {
     );
   }
 
+  let revokeStatus: "revoked" | "failed" | "not_applicable" = "not_applicable";
   if (profile.token_type === "session") {
     try {
-      await fetch(`${profile.instance}/api/session`, {
+      const response = await getInvocationTransport(opts).requestJson(`${profile.instance}/api/session`, {
         method: "DELETE",
         headers: { "X-Metabase-Session": profile.token },
       });
+      revokeStatus = response.ok ? "revoked" : "failed";
     } catch {
+      revokeStatus = "failed";
       // Best effort: local removal still wins.
     }
   }
 
-  const profiles = { ...(config.profiles ?? {}) };
+  // Revocation may await the network. Preserve changes made by another agent
+  // during that wait, and never remove a replacement identity under this alias.
+  const latest = loadConfig();
+  const current = latest.profiles?.[alias];
+  if (current && (current.instance !== profile.instance || current.token !== profile.token || current.token_type !== profile.token_type)) {
+    throw new CliError("CONFIGURATION_ERROR", `Profile '${alias}' changed during removal; its replacement was kept.`,
+      "Inspect 'mb auth list' and retry removal only if the current Profile is the intended target.");
+  }
+  const profiles = { ...(latest.profiles ?? {}) };
   delete profiles[alias];
   saveConfig({
+    ...latest,
     version: 2,
-    current_profile: config.current_profile === alias
+    current_profile: latest.current_profile === alias
       ? null
-      : config.current_profile ?? null,
+      : latest.current_profile ?? null,
     profiles,
     hosts: {},
     current_host: null,
   });
   process.stderr.write(`Removed Profile ${alias}.\n`);
+  return { sourceId: alias, sourceUrl: profile.instance, record: { operation: "rm", ok: true, profile: alias,
+    status: "removed", session_revoked: revokeStatus === "revoked", revoke_status: revokeStatus } };
 }
 
 export function registerAuthRmCommand(parent: Command): void {
   parent
     .command("rm <alias>")
     .description("Remove a saved Profile")
-    .action(async (alias: string) => {
+    .action(async function (this: Command, alias: string) {
       try {
-        await handleAuthRm(alias);
+        const opts = this.optsWithGlobals();
+        outputOperationResult(await handleAuthRm(alias, opts), opts);
       } catch (error: any) {
-        process.stderr.write(`Error: ${error.message}\n`);
-        process.exitCode = 1;
+        handleCommandError(error, this.optsWithGlobals(), { resolveSource: false, sourceId: alias });
       }
     });
 }

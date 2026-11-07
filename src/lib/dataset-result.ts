@@ -1,5 +1,6 @@
 import type { PaginationInfo } from "../types/index.js";
 import { formatQueryResult } from "./formatter.js";
+import { CliError } from "./cli-error.js";
 import { humanizeQueryError } from "./error-message.js";
 
 export interface DatasetResultOptions {
@@ -18,8 +19,10 @@ export function unpackDatasetResult(
   options: DatasetResultOptions,
 ): DatasetResult {
   if (raw.status === "failed" || raw.error) {
-    throw new Error(
+    throw new CliError(
+      "QUERY_FAILED",
       humanizeQueryError(raw.error || raw.json_query?.error || options.failureMessage),
+      "Review SQL, parameters, and database permissions before retrying.",
     );
   }
 

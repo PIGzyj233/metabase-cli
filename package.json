@@ -10,14 +10,17 @@
   "files": [
     "dist/",
     "bin/",
-    "skill.md"
+    "skill.md",
+    "docs/commands.md"
   ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm build && pnpm test"
+    "docs:commands": "tsx scripts/generate-command-docs.ts",
+    "docs:check": "tsx scripts/generate-command-docs.ts --check",
+    "prepublishOnly": "pnpm docs:check && pnpm build && pnpm test"
   },
   "keywords": [
     "metabase",

@@ -39,7 +39,7 @@ export function registerAuthListCommand(parent: Command): void {
           omitHeader: opts.omitHeader ?? opts.header === false,
         });
       } catch (error) {
-        handleCommandError(error);
+        handleCommandError(error, opts, { resolveSource: false });
       }
     });
 }
