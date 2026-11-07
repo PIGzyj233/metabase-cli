@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { parsePositiveInteger, parseNonNegativeInteger, validatePagination } from "../../lib/input-validation.js";
 import { createApiClient } from "../../lib/api-client.js";
 import { output } from "../../lib/formatter.js";
 import { unpackDatasetResult, type DatasetResult } from "../../lib/dataset-result.js";
@@ -85,16 +86,18 @@ export async function handleCardRun(
   cardId: string | number,
   opts: CardRunOptions
 ): Promise<DatasetResult> {
+  const parsedCardId = parsePositiveInteger(cardId, "Card ID");
+  validatePagination(opts);
   const client = createApiClient(opts);
 
   let body: any = { ignore_cache: false };
   if (opts.params) {
-    body.parameters = await resolveParameters(client, cardId, opts.params);
+    body.parameters = await resolveParameters(client, parsedCardId, opts.params);
   } else if (opts.templateTags) {
-    body.parameters = await resolveTemplateTags(client, cardId, opts.templateTags);
+    body.parameters = await resolveTemplateTags(client, parsedCardId, opts.templateTags);
   }
 
-  const res = await client.post(`/api/card/${cardId}/query`, body);
+  const res = await client.post(`/api/card/${parsedCardId}/query`, body);
 
   return unpackDatasetResult(res, {
     limit: opts.limit,
@@ -109,8 +112,8 @@ export function registerCardRunCommand(parent: Command): void {
     .description("Execute a saved card/question")
     .option("--params <json>", "Parameters as JSON key-value pairs")
     .option("--template-tags <json>", "Template tag parameters as JSON key-value pairs (for native queries)")
-    .option("--limit <n>", "Max rows (default: 100)", (v) => parseInt(v), 100)
-    .option("--offset <n>", "Row offset", (v) => parseInt(v), 0)
+    .option("--limit <n>", "Max rows to display from the response (local slice)", (v) => parsePositiveInteger(v, "Limit"), 100)
+    .option("--offset <n>", "Rows to skip locally; each invocation submits the query again", (v) => parseNonNegativeInteger(v, "Offset"), 0)
     .action(async function (this: Command, cardId: string) {
       const opts = this.optsWithGlobals();
       try {

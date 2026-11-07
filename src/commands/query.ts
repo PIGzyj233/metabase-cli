@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { parsePositiveInteger, parseNonNegativeInteger, validatePagination } from "../lib/input-validation.js";
 import { createApiClient } from "../lib/api-client.js";
 import { output } from "../lib/formatter.js";
 import { unpackDatasetResult, type DatasetResult } from "../lib/dataset-result.js";
@@ -17,11 +18,13 @@ export async function handleQuery(
   sql: string,
   opts: QueryOptions
 ): Promise<DatasetResult> {
-  const dbId = opts.db || resolveDefaultDb(opts);
-  if (!dbId) {
+  validatePagination(opts);
+  const rawDbId = opts.db ?? resolveDefaultDb(opts);
+  if (rawDbId === undefined) {
     throw new Error("Database ID required. Use --db <id> or set MB_DEFAULT_DB.");
   }
 
+  const dbId = parsePositiveInteger(rawDbId, "Database ID");
   const client = createApiClient(opts);
   const res = await client.post("/api/dataset", {
     database: dbId,
@@ -40,9 +43,9 @@ export function registerQueryCommand(program: Command): void {
   program
     .command("query <sql>")
     .description("Execute a native SQL query")
-    .option("--db <id>", "Database ID (or set MB_DEFAULT_DB)", (v) => parseInt(v))
-    .option("--limit <n>", "Max rows to return (default: 100)", (v) => parseInt(v), 100)
-    .option("--offset <n>", "Row offset for pagination", (v) => parseInt(v), 0)
+    .option("--db <id>", "Database ID (or set MB_DEFAULT_DB)", (v) => parsePositiveInteger(v, "Database ID"))
+    .option("--limit <n>", "Max rows to display from the response (local slice)", (v) => parsePositiveInteger(v, "Limit"), 100)
+    .option("--offset <n>", "Rows to skip locally; each invocation submits the query again", (v) => parseNonNegativeInteger(v, "Offset"), 0)
     .action(async function (this: Command, sql: string) {
       const opts = this.optsWithGlobals();
       try {
