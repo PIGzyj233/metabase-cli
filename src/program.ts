@@ -8,11 +8,14 @@ import { registerAuthLogoutCommand } from "./commands/auth/logout.js";
 import { registerAuthRmCommand } from "./commands/auth/rm.js";
 import { registerAuthStatusCommand } from "./commands/auth/status.js";
 import { registerAuthUseCommand } from "./commands/auth/use.js";
+import { registerAuthCheckCommand } from "./commands/auth/check.js";
+import { registerAuthSetDefaultDbCommand } from "./commands/auth/set-default-db.js";
 import { registerDbFieldsCommand } from "./commands/db/fields.js";
 import { registerDbListCommand } from "./commands/db/list.js";
 import { registerDbMetadataCommand } from "./commands/db/metadata.js";
 import { registerDbSchemasCommand } from "./commands/db/schemas.js";
 import { registerDbTablesCommand } from "./commands/db/tables.js";
+import { registerDbSchemaCommand } from "./commands/db/schema.js";
 import { registerQueryCommand } from "./commands/query.js";
 import { registerCardListCommand } from "./commands/card/list.js";
 import { registerCardCreateCommand } from "./commands/card/create.js";
@@ -59,6 +62,8 @@ registerAuthLogoutCommand(authCmd);
 registerAuthRmCommand(authCmd);
 registerAuthStatusCommand(authCmd);
 registerAuthUseCommand(authCmd);
+registerAuthCheckCommand(authCmd);
+registerAuthSetDefaultDbCommand(authCmd);
 
 // Database metadata commands
 const dbCmd = program.command("db").description("Database metadata operations");
@@ -67,6 +72,7 @@ registerDbSchemasCommand(dbCmd);
 registerDbTablesCommand(dbCmd);
 registerDbFieldsCommand(dbCmd);
 registerDbMetadataCommand(dbCmd);
+registerDbSchemaCommand(dbCmd);
 
 // Query command
 registerQueryCommand(program);
